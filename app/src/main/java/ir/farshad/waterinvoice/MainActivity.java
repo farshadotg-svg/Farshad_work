@@ -3,7 +3,6 @@ package ir.farshad.waterinvoice;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.CancellationSignal;
-import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -27,8 +26,6 @@ import com.google.firebase.auth.GoogleAuthProvider;
 
 import org.json.JSONObject;
 
-import java.util.concurrent.Executor;
-
 public class MainActivity extends Activity {
     private WebView webView;
     private CredentialManager credentialManager;
@@ -38,9 +35,9 @@ public class MainActivity extends Activity {
         super.onCreate(state);
         credentialManager = CredentialManager.create(this);
         firebaseAuth = FirebaseAuth.getInstance();
-
         webView = new WebView(this);
         setContentView(webView);
+
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -48,35 +45,67 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
         settings.setSupportMultipleWindows(false);
+
         webView.addJavascriptInterface(new GoogleAuthBridge(), "AndroidGoogleAuth");
         webView.setWebChromeClient(new WebChromeClient());
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                installNativeGoogleSignInOverride();
+            }
+        });
         webView.loadUrl("file:///android_asset/index.html");
     }
 
+    private void installNativeGoogleSignInOverride() {
+        String script =
+            "window.googleSignIn = async function() {" +
+            " try {" +
+            "  if (!window.fbAuth || !window.fbDb) throw new Error('Firebase هنوز آماده نیست.');" +
+            "  const idToken = await new Promise((resolve, reject) => {" +
+            "   window.onNativeGoogleSignInSuccess = resolve;" +
+            "   window.onNativeGoogleSignInError = reject;" +
+            "   window.AndroidGoogleAuth.signIn();" +
+            "  });" +
+            "  const credential = firebase.auth.GoogleAuthProvider.credential(idToken);" +
+            "  await fbAuth.signInWithCredential(credential);" +
+            "  const u = fbAuth.currentUser;" +
+            "  if (!u) throw new Error('ورود انجام نشد.');" +
+            "  const ref = fbDb.collection('users').doc(u.uid);" +
+            "  const snap = await ref.get();" +
+            "  if (snap.exists) {" +
+            "   if (confirm('برای این حساب، پشتیبان ابری پیدا شد. اطلاعات ابری جایگزین اطلاعات فعلی این گوشی شود؟\\nتأیید = بازیابی از ابر\\nلغو = نگه‌داشتن اطلاعات گوشی و بارگذاری آن به ابر')) {" +
+            "    const d = snap.data(); records = Array.isArray(d.records) ? d.records : [];" +
+            "    localStorage.setItem(STORE, JSON.stringify(records));" +
+            "    if (Array.isArray(d.customers)) localStorage.setItem('waterServiceCustomers_v1', JSON.stringify(d.customers));" +
+            "    if (d.customerPhones && typeof d.customerPhones === 'object') {" +
+            "     customerPhones = d.customerPhones; localStorage.setItem('waterServiceCustomerPhones_v1', JSON.stringify(customerPhones));" +
+            "    } render(); alert('اطلاعات ابری بازیابی شد.');" +
+            "   } else { await syncCloud(true); }" +
+            "  } else { await syncCloud(true); alert('اتصال انجام شد و اطلاعات فعلی در حساب گوگل ذخیره شد.'); }" +
+            " } catch(e) { setCloudStatus('خطا: ' + e.message); alert('اتصال انجام نشد.\\n' + e.message); }" +
+            "};";
+        webView.evaluateJavascript(script, null);
+    }
+
     private class GoogleAuthBridge {
-        @JavascriptInterface
-        public void signIn() {
-            runOnUiThread(() -> beginGoogleSignIn());
+        @JavascriptInterface public void signIn() {
+            runOnUiThread(MainActivity.this::beginGoogleSignIn);
         }
     }
 
     private void beginGoogleSignIn() {
-        GetGoogleIdOption googleIdOption = new GetGoogleIdOption.Builder()
+        GetGoogleIdOption option = new GetGoogleIdOption.Builder()
                 .setServerClientId(getString(R.string.default_web_client_id))
                 .setFilterByAuthorizedAccounts(false)
                 .setAutoSelectEnabled(false)
                 .build();
-
         GetCredentialRequest request = new GetCredentialRequest.Builder()
-                .addCredentialOption(googleIdOption)
+                .addCredentialOption(option)
                 .build();
 
         credentialManager.getCredentialAsync(
-                this,
-                request,
-                new CancellationSignal(),
-                getMainExecutor(),
+                this, request, new CancellationSignal(), getMainExecutor(),
                 new CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
                     @Override public void onResult(@NonNull GetCredentialResponse response) {
                         handleGoogleCredential(response.getCredential());
@@ -84,8 +113,7 @@ public class MainActivity extends Activity {
                     @Override public void onError(@NonNull GetCredentialException e) {
                         sendAuthError(e.getMessage());
                     }
-                }
-        );
+                });
     }
 
     private void handleGoogleCredential(Credential credential) {
@@ -94,7 +122,6 @@ public class MainActivity extends Activity {
             sendAuthError("نوع اطلاعات ورود گوگل پشتیبانی نمی‌شود.");
             return;
         }
-
         try {
             GoogleIdTokenCredential googleCredential =
                     GoogleIdTokenCredential.createFrom(((CustomCredential) credential).getData());
@@ -103,13 +130,11 @@ public class MainActivity extends Activity {
             firebaseAuth.signInWithCredential(firebaseCredential)
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
-                            String token = googleCredential.getIdToken();
                             webView.evaluateJavascript(
                                     "window.onNativeGoogleSignInSuccess && window.onNativeGoogleSignInSuccess("
-                                            + JSONObject.quote(token) + ");", null);
+                                            + JSONObject.quote(googleCredential.getIdToken()) + ");", null);
                         } else {
-                            sendAuthError(task.getException() == null
-                                    ? "ورود به Firebase ناموفق بود."
+                            sendAuthError(task.getException() == null ? "ورود به Firebase ناموفق بود."
                                     : task.getException().getMessage());
                         }
                     });
