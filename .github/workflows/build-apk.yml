@@ -17,12 +17,10 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-      - name: Require app HTML
+      - name: Require app HTML and Firebase config
         run: |
-          if [ ! -f index.html ]; then
-            echo 'Missing index.html. Upload the original HTML app to the repository root with this exact name.'
-            exit 1
-          fi
+          test -s index.html || (echo 'Missing or empty index.html: upload the original app HTML to repository root.' && exit 1)
+          test -s app/google-services.json || (echo 'Missing app/google-services.json' && exit 1)
           mkdir -p app/src/main/assets
           cp index.html app/src/main/assets/index.html
       - name: Set up Java
