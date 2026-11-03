@@ -1,3 +1,19 @@
-# Android APK
+# فاکتور سرویس‌های حمل آب — نسخه اندروید
 
-Initial setup for the water-service invoice app. Source HTML still needs to be added as `index.html` before building.
+پوستهٔ اندروید و GitHub Actions برای ساخت APK آماده شده‌اند. فایل اصلی برنامه هنوز باید به ریشهٔ مخزن با نام دقیق `index.html` اضافه شود.
+
+## تنها مرحلهٔ باقی‌مانده از سمت شما (با گوشی)
+
+1. این مخزن را باز کنید: https://github.com/farshadotg-svg/Farshad_work
+2. روی **Add file** و سپس **Upload files** بزنید.
+3. فایل `index_chrome_android_layout_fixed(2).html` را از گوشی انتخاب کنید.
+4. نام فایل در مخزن باید `index.html` باشد. اگر تغییر نام از صفحهٔ آپلود ممکن نبود، قبل از انتخاب فایل آن را در برنامهٔ فایل‌های گوشی تغییر نام دهید.
+5. پایین صفحه **Commit changes** را بزنید.
+
+بعد از اضافه‌شدن `index.html`، گردش‌کار ساخت APK خودکار اجرا می‌شود. وضعیت را اینجا ببینید: https://github.com/farshadotg-svg/Farshad_work/actions
+
+وقتی اجرا با وضعیت سبز تمام شد، وارد همان اجرا شوید، از بخش **Artifacts** مورد `Farshad-Water-Invoice-APK` را دانلود و ZIP را باز کنید؛ فایل `app-debug.apk` را روی گوشی نصب کنید. ممکن است اندروید برای نصب از این منبع اجازه بخواهد.
+
+## یادآوری
+
+برنامه از Firebase و ورود گوگل استفاده می‌کند. ورود گوگل با پنجرهٔ popup در WebView ممکن است نیاز به پیکربندی OAuth یا اصلاح جداگانه داشته باشد؛ باید پس از ساخت APK روی گوشی آزمایش شود. این مخزن فعلاً APK نهاییِ ساخته‌شده ندارد.
