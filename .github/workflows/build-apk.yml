@@ -1,0 +1,44 @@
+name: Build Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'app/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - '.github/workflows/build-apk.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Require app HTML
+        run: |
+          if [ ! -f index.html ]; then
+            echo 'Missing index.html. Upload the original HTML app to the repository root with this exact name.'
+            exit 1
+          fi
+          mkdir -p app/src/main/assets
+          cp index.html app/src/main/assets/index.html
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Build debug APK
+        run: gradle assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Farshad-Water-Invoice-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
