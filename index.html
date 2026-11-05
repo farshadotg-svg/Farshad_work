@@ -404,7 +404,7 @@ function selectedMemoryRange(){
  if(start>end){alert('تاریخ شروع نباید بعد از تاریخ پایان باشد.');return null}
  return dayKeys().filter(d=>d>=start&&d<=end).sort();
 }
-function memoryRangeLabel(start,end){return toJalali(start)+' تا '+toJalali(end)}
+function memoryRangeLabel(start,end){return String(start||'').trim()+' تا '+String(end||'').trim()}
 function memoryRangeRecords(days){return days.flatMap(day=>dayRecords(day).map(r=>Object.assign({_day:day},r)))}
 function memoryRangeText(days){return days.length?days.map(dayText).join('\n\n--------------------\n\n'):'در بازه انتخاب‌شده سرویسی ثبت نشده است.'}
 function exportMemoryRange(){const days=selectedMemoryRange();if(!days)return;const txt=memoryRangeText(days);if(window.AndroidBridge&&typeof window.AndroidBridge.copyText==='function'){window.AndroidBridge.copyText(txt);alert('متن کل بازه در کلیپ‌بورد کپی شد.');return}downloadText('hesab-bazeh-'+$('memoryStart').value.replace(/[\/\.]/g,'-')+'-'+$('memoryEnd').value.replace(/[\/\.]/g,'-')+'.txt',txt)}
