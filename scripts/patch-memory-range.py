@@ -26,6 +26,16 @@ for field_id in ("memoryStart", "memoryEnd"):
     tag += ' inputmode="numeric" lang="fa-IR"'
     html = html[:match.start()] + tag + match.group(2) + html[match.end():]
 
+# Remove the extra whole-day details action and its now-unused handler.
+extra_button = '<button onclick="showDayDetails(\\'\${day}\\')">جزئیات کل روز</button>'
+html = html.replace(extra_button, "")
+details_start = html.find("function showDayDetails(day){")
+details_end = html.find("function selectedMemoryRange(){", details_start)
+if details_start >= 0:
+    if details_end < 0:
+        raise SystemExit("Could not safely locate end of whole-day details handler.")
+    html = html[:details_start] + html[details_end:]
+
 # Enforce confirmation on both transitions without touching other UI.
 pstart = html.find("function togglePaid(id){")
 if pstart < 0:
