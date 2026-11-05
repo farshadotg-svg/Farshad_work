@@ -52,9 +52,9 @@ if html.count('id="memoryStart"') != 1 or html.count('id="memoryEnd"') != 1:
 pstart = html.find("function togglePaid(id){")
 if pstart < 0:
     raise SystemExit("Could not locate payment toggle handler.")
-pend = html.find("\\nfunction ", pstart + 1)
+pend = html.find("\nfunction ", pstart + 1)
 if pend < 0:
-    pend = html.find("\\nasync function ", pstart + 1)
+    pend = html.find("\nasync function ", pstart + 1)
 if pend < 0:
     raise SystemExit("Could not locate end of payment toggle handler.")
 payment = """function togglePaid(id){const item=records.find(r=>String(r.id)===String(id));if(!item)return;if(item.paid){if(!confirm('آیا به اشتباه «پرداخت شد» را زده‌اید؟'))return;records=records.map(r=>String(r.id)===String(id)?{...r,paid:false,updatedAt:Date.now()}:r)}else{if(!confirm('آیا این سرویس پرداخت شده است؟'))return;records=records.map(r=>String(r.id)===String(id)?{...r,paid:true,updatedAt:Date.now()}:r)}persist()}"""
