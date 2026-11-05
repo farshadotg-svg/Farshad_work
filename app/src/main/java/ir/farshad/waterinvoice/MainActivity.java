@@ -1,8 +1,17 @@
 package ir.farshad.waterinvoice;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.CancellationSignal;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintManager;
+import android.util.Base64;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -10,6 +19,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.FileProvider;
 import androidx.credentials.Credential;
 import androidx.credentials.CredentialManager;
 import androidx.credentials.CredentialManagerCallback;
@@ -20,21 +30,19 @@ import androidx.credentials.exceptions.GetCredentialException;
 
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
-import com.google.firebase.auth.AuthCredential;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.GoogleAuthProvider;
 
 import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileOutputStream;
 
 public class MainActivity extends Activity {
     private WebView webView;
     private CredentialManager credentialManager;
-    private FirebaseAuth firebaseAuth;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         credentialManager = CredentialManager.create(this);
-        firebaseAuth = FirebaseAuth.getInstance();
         webView = new WebView(this);
         setContentView(webView);
 
@@ -46,6 +54,7 @@ public class MainActivity extends Activity {
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
         settings.setSupportMultipleWindows(false);
 
+        webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
         webView.addJavascriptInterface(new GoogleAuthBridge(), "AndroidGoogleAuth");
         webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new WebViewClient() {
@@ -61,7 +70,7 @@ public class MainActivity extends Activity {
         String script =
             "window.googleSignIn = async function() {" +
             " try {" +
-            "  if (!window.fbAuth || !window.fbDb) throw new Error('Firebase هنوز آماده نیست.');" +
+            "  if (typeof fbAuth === 'undefined' || !fbAuth || typeof fbDb === 'undefined' || !fbDb) throw new Error('Firebase هنوز آماده نیست. اینترنت را بررسی کنید.');" +
             "  const idToken = await new Promise((resolve, reject) => {" +
             "   window.onNativeGoogleSignInSuccess = resolve;" +
             "   window.onNativeGoogleSignInError = reject;" +
@@ -78,9 +87,8 @@ public class MainActivity extends Activity {
             "    const d = snap.data(); records = Array.isArray(d.records) ? d.records : [];" +
             "    localStorage.setItem(STORE, JSON.stringify(records));" +
             "    if (Array.isArray(d.customers)) localStorage.setItem('waterServiceCustomers_v1', JSON.stringify(d.customers));" +
-            "    if (d.customerPhones && typeof d.customerPhones === 'object') {" +
-            "     customerPhones = d.customerPhones; localStorage.setItem('waterServiceCustomerPhones_v1', JSON.stringify(customerPhones));" +
-            "    } render(); alert('اطلاعات ابری بازیابی شد.');" +
+            "    if (d.customerPhones && typeof d.customerPhones === 'object') { customerPhones = d.customerPhones; localStorage.setItem('waterServiceCustomerPhones_v1', JSON.stringify(customerPhones)); }" +
+            "    render(); alert('اطلاعات ابری بازیابی شد.');" +
             "   } else { await syncCloud(true); }" +
             "  } else { await syncCloud(true); alert('اتصال انجام شد و اطلاعات فعلی در حساب گوگل ذخیره شد.'); }" +
             " } catch(e) { setCloudStatus('خطا: ' + e.message); alert('اتصال انجام نشد.\\n' + e.message); }" +
@@ -125,19 +133,9 @@ public class MainActivity extends Activity {
         try {
             GoogleIdTokenCredential googleCredential =
                     GoogleIdTokenCredential.createFrom(((CustomCredential) credential).getData());
-            AuthCredential firebaseCredential =
-                    GoogleAuthProvider.getCredential(googleCredential.getIdToken(), null);
-            firebaseAuth.signInWithCredential(firebaseCredential)
-                    .addOnCompleteListener(this, task -> {
-                        if (task.isSuccessful()) {
-                            webView.evaluateJavascript(
-                                    "window.onNativeGoogleSignInSuccess && window.onNativeGoogleSignInSuccess("
-                                            + JSONObject.quote(googleCredential.getIdToken()) + ");", null);
-                        } else {
-                            sendAuthError(task.getException() == null ? "ورود به Firebase ناموفق بود."
-                                    : task.getException().getMessage());
-                        }
-                    });
+            webView.post(() -> webView.evaluateJavascript(
+                    "window.onNativeGoogleSignInSuccess && window.onNativeGoogleSignInSuccess("
+                            + JSONObject.quote(googleCredential.getIdToken()) + ");", null));
         } catch (Exception e) {
             sendAuthError(e.getMessage());
         }
@@ -147,6 +145,72 @@ public class MainActivity extends Activity {
         webView.post(() -> webView.evaluateJavascript(
                 "window.onNativeGoogleSignInError && window.onNativeGoogleSignInError("
                         + JSONObject.quote(message == null ? "خطای ورود گوگل" : message) + ");", null));
+    }
+
+    private class AndroidBridge {
+        @JavascriptInterface public void copyText(String text) {
+            runOnUiThread(() -> {
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                clipboard.setPrimaryClip(ClipData.newPlainText("گزارش روزانه", text == null ? "" : text));
+            });
+        }
+
+        @JavascriptInterface public void shareText(String title, String text) {
+            runOnUiThread(() -> {
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.setType("text/plain");
+                intent.putExtra(Intent.EXTRA_SUBJECT, title == null ? "حساب سرویس‌های آب" : title);
+                intent.putExtra(Intent.EXTRA_TEXT, text == null ? "" : text);
+                startActivity(Intent.createChooser(intent, "اشتراک‌گذاری گزارش"));
+            });
+        }
+
+        @JavascriptInterface public void shareImageBase64(String encoded, String filename) {
+            runOnUiThread(() -> {
+                try {
+                    byte[] bytes = Base64.decode(encoded, Base64.DEFAULT);
+                    File dir = new File(getCacheDir(), "shared-images");
+                    if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("ساخت پوشه تصویر ناموفق بود");
+                    String safeName = (filename == null ? "factor.png" : filename).replaceAll("[^A-Za-z0-9._-]", "_");
+                    if (!safeName.endsWith(".png")) safeName = "factor.png";
+                    File file = new File(dir, safeName);
+                    try (FileOutputStream out = new FileOutputStream(file)) { out.write(bytes); }
+                    Uri uri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", file);
+                    Intent intent = new Intent(Intent.ACTION_SEND);
+                    intent.setType("image/png");
+                    intent.putExtra(Intent.EXTRA_STREAM, uri);
+                    intent.setClipData(ClipData.newUri(getContentResolver(), "فاکتور", uri));
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(intent, "اشتراک‌گذاری تصویر فاکتور"));
+                } catch (Exception e) {
+                    android.widget.Toast.makeText(MainActivity.this, "اشتراک‌گذاری تصویر ناموفق بود: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
+        @JavascriptInterface public void printHtml(String html) {
+            runOnUiThread(() -> {
+                WebView printView = new WebView(MainActivity.this);
+                printView.getSettings().setJavaScriptEnabled(false);
+                printView.setWebViewClient(new WebViewClient() {
+                    private boolean started;
+                    @Override public void onPageFinished(WebView view, String url) {
+                        if (started) return;
+                        started = true;
+                        PrintManager printManager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
+                        PrintDocumentAdapter adapter = view.createPrintDocumentAdapter("Factor-Water-Service");
+                        PrintAttributes attributes = new PrintAttributes.Builder()
+                                .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+                                .setResolution(new PrintAttributes.Resolution("pdf", "PDF", 300, 300))
+                                .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+                                .build();
+                        printManager.print("فاکتور سرویس آب", adapter, attributes);
+                    }
+                });
+                String printable = html == null ? "" : html.replace("window.onload=()=>window.print()", "");
+                printView.loadDataWithBaseURL(null, printable, "text/html", "UTF-8", null);
+            });
+        }
     }
 
     @Override public void onBackPressed() {
