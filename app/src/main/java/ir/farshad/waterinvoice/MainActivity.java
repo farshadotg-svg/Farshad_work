@@ -29,6 +29,7 @@ import androidx.credentials.GetCredentialResponse;
 import androidx.credentials.exceptions.GetCredentialException;
 
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 
 import org.json.JSONObject;
@@ -119,10 +120,8 @@ public class MainActivity extends Activity {
     }
 
     private void beginGoogleSignIn() {
-        GetGoogleIdOption option = new GetGoogleIdOption.Builder()
-                .setServerClientId(getString(R.string.default_web_client_id))
-                .setFilterByAuthorizedAccounts(false)
-                .setAutoSelectEnabled(false)
+        GetSignInWithGoogleOption option = new GetSignInWithGoogleOption.Builder(
+                getString(R.string.default_web_client_id))
                 .build();
         GetCredentialRequest request = new GetCredentialRequest.Builder()
                 .addCredentialOption(option)
