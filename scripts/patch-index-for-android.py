@@ -26,6 +26,12 @@ replacements = [
 ";let w=window.open('','_blank');if(!w){alert('مرورگر پنجره جدید را مسدود کرده؛ اجازه بازشدن پنجره را بدهید.');return}w.document.open();w.document.write(html2);w.document.close()}",
 ";if(window.AndroidBridge&&typeof window.AndroidBridge.printHtml==='function'){window.AndroidBridge.printHtml(html2);return}let w=window.open('','_blank');if(!w){alert('مرورگر پنجره جدید را مسدود کرده؛ اجازه بازشدن پنجره را بدهید.');return}w.document.open();w.document.write(html2);w.document.close()}"
 )
+,
+(
+"setInterval(()=>{if(window.cloudReady&&fbAuth&&fbAuth.currentUser)syncCloud(false)},24*60*60*1000);",
+"setInterval(()=>{if(window.cloudReady&&fbAuth&&fbAuth.currentUser)syncCloud(false)},60*1000);\\nwindow.addEventListener('online',()=>{if(window.cloudReady&&fbAuth&&fbAuth.currentUser)syncCloud(false)});"
+)
+
 ]
 for old, new in replacements:
     count = html.count(old)
@@ -34,4 +40,4 @@ for old, new in replacements:
     html = html.replace(old, new)
 
 path.write_text(html, encoding="utf-8")
-print("Patched 4 handlers in the original app HTML.")
+print("Patched Android handlers and one-minute cloud sync in the original app HTML.")
