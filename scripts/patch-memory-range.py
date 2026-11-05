@@ -23,7 +23,8 @@ for field_id in ("memoryStart", "memoryEnd"):
     tag = match.group(1)
     tag = re.sub(r'\s+inputmode="[^"]*"', '', tag)
     tag = re.sub(r'\s+lang="[^"]*"', '', tag)
-    tag += ' inputmode="numeric" lang="fa-IR"'
+    tag = tag.replace('inputmode="numeric"', 'inputmode="none"')
+    tag += ' readonly inputmode="none" lang="fa-IR'
     html = html[:match.start()] + tag + match.group(2) + html[match.end():]
     # Use an in-app Persian keypad: Android WebView cannot force Gboard's language.
     keypad = '''<div class="memory-keypad" aria-label="صفحه‌کلید تاریخ شمسی">
@@ -40,7 +41,7 @@ for field_id in ("memoryStart", "memoryEnd"):
 
 
 # Remove the Firestore rules disclosure from the backup section as requested.
-html, removed_rules = re.subn(r'<details>\\s*<summary>قوانین امنیتی Firestore.*?</details>', '', html, count=1, flags=re.S)
+html, removed_rules = re.subn(r'<details>\s*<summary>قوانین امنیتی Firestore.*?</details>', '', html, count=1, flags=re.S)
 if removed_rules != 1:
     raise SystemExit("Could not locate Firestore security rules disclosure in backup section.")
 
@@ -50,7 +51,7 @@ if 'memory-persian-keypad-style' not in html:
     html = html.replace('</head>', key_css + '</head>', 1)
 
 # Add keypad handler before app initialization.
-handler = """function memoryDateKey(id,key){const el=$(id);if(!el)return;let v=el.value||'';if(key==='clear')v='';else if(key==='⌫')v=v.slice(0,-1);else if(v.length<10)v+=key;el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));}
+handler = """function memoryDateKey(id,key){const el=$(id);if(!el)return;let v=el.value||'';if(key==='clear')v='';else if(key==='⌫')v=v.slice(0,-1);else if(v.length<10)v+=key;el.value=v;}
 """
 if 'function memoryDateKey(id,key)' not in html:
     pos=html.find('function init(){')
