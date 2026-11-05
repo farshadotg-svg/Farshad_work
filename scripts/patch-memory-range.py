@@ -27,7 +27,7 @@ for field_id in ("memoryStart", "memoryEnd"):
     html = html[:match.start()] + tag + match.group(2) + html[match.end():]
 
 # Remove the extra whole-day details action and its now-unused handler.
-extra_button = '<button onclick="showDayDetails(\\'\${day}\\')">جزئیات کل روز</button>'
+extra_button = """<button onclick="showDayDetails('${day}')">جزئیات کل روز</button>"""
 html = html.replace(extra_button, "")
 details_start = html.find("function showDayDetails(day){")
 details_end = html.find("function selectedMemoryRange(){", details_start)
