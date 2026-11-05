@@ -28,8 +28,8 @@ for field_id in ("memoryStart", "memoryEnd"):
 
 # Remove the Firestore rules disclosure from the backup section as requested.
 html, removed_rules = re.subn(r'<details>\s*<summary>قوانین امنیتی Firestore.*?</details>', '', html, count=1, flags=re.S)
-if removed_rules != 1:
-    raise SystemExit("Could not locate Firestore security rules disclosure in backup section.")
+if removed_rules == 0:
+    print("Firestore rules disclosure already absent; continuing.")
 
 # Remove the extra whole-day details action and its now-unused handler.
 extra_button = """<button onclick="showDayDetails('${day}')">جزئیات کل روز</button>"""
