@@ -16,13 +16,13 @@ html = html[:start] + replacement + html[end:]
 import re
 
 for field_id in ("memoryStart", "memoryEnd"):
-    pattern = r'(<input\\b(?=[^>]*\\bid="' + field_id + r'")[^>]*)(>)'
+    pattern = r'(<input\b(?=[^>]*\bid="' + field_id + r'")[^>]*)(>)'
     match = re.search(pattern, html)
     if not match:
         raise SystemExit("Could not locate Persian memory date input: " + field_id)
     tag = match.group(1)
-    tag = re.sub(r'\\s+inputmode="[^"]*"', '', tag)
-    tag = re.sub(r'\\s+lang="[^"]*"', '', tag)
+    tag = re.sub(r'\s+inputmode="[^"]*"', '', tag)
+    tag = re.sub(r'\s+lang="[^"]*"', '', tag)
     tag += ' inputmode="numeric" lang="fa-IR"'
     html = html[:match.start()] + tag + match.group(2) + html[match.end():]
 
