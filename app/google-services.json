@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "447863970011-6i76s6npbrqa9t93bqbnac2uiap95gif.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "ir.farshad.waterinvoice",
+            "certificate_hash": "67e6ce2f4e4dde1b21fdf7366f63f803bce21fd9"
+          }
+        },
+        {
           "client_id": "447863970011-k0ufn7bj8e4q3jm5dct8v54ud4pv5ii9.apps.googleusercontent.com",
           "client_type": 3
         }
