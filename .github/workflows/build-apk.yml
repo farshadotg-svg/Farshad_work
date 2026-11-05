@@ -23,6 +23,7 @@ jobs:
           test -s app/google-services.json || (echo 'Missing app/google-services.json' && exit 1)
           mkdir -p app/src/main/assets
           cp index.html app/src/main/assets/index.html
+          python3 scripts/patch-index-for-android.py
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
