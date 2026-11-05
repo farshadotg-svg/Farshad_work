@@ -24,7 +24,7 @@ for field_id in ("memoryStart", "memoryEnd"):
     tag = re.sub(r'\s+inputmode="[^"]*"', '', tag)
     tag = re.sub(r'\s+lang="[^"]*"', '', tag)
     tag = tag.replace('inputmode="numeric"', 'inputmode="none"')
-    tag += ' readonly inputmode="none" lang="fa-IR'
+    tag += ' readonly inputmode="none" lang="fa-IR"'
     html = html[:match.start()] + tag + match.group(2) + html[match.end():]
     # Use an in-app Persian keypad: Android WebView cannot force Gboard's language.
     keypad = '''<div class="memory-keypad" aria-label="صفحه‌کلید تاریخ شمسی">
@@ -34,9 +34,6 @@ for field_id in ("memoryStart", "memoryEnd"):
 <button type="button" class="memory-key-clear" onclick="memoryDateKey(\'%FIELD%\',\'clear\')">پاک کردن</button></div>'''.replace('%FIELD%', field_id)
     if 'class="memory-keypad"' not in html[match.end():match.end()+500]:
         html = html[:match.end()] + keypad + html[match.end():]
-    html = html.replace('id="' + field_id + '" type="text"', 'id="' + field_id + '" type="text" readonly')
-    html = html.replace('id="' + field_id + '" type="text" readonly inputmode="numeric"',
-                        'id="' + field_id + '" type="text" readonly inputmode="none"')
 
 
 
