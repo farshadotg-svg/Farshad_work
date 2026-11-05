@@ -29,7 +29,7 @@ replacements = [
 ,
 (
 "setInterval(()=>{if(window.cloudReady&&fbAuth&&fbAuth.currentUser)syncCloud(false)},24*60*60*1000);",
-"setInterval(()=>{if(window.cloudReady&&fbAuth&&fbAuth.currentUser)syncCloud(false)},60*1000);\\nwindow.addEventListener('online',()=>{if(window.cloudReady&&fbAuth&&fbAuth.currentUser)syncCloud(false)});"
+"setInterval(()=>{if(window.cloudReady&&fbAuth&&fbAuth.currentUser)syncCloud(false)},60*1000);\nwindow.addEventListener('online',()=>{if(window.cloudReady&&fbAuth&&fbAuth.currentUser)syncCloud(false)});"
 )
 
 ]
