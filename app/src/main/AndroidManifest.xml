@@ -3,7 +3,6 @@
     <application android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:label="Hi Farshad"
         android:icon="@drawable/ic_launcher"
-        android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="false"
         android:allowBackup="true"
         android:supportsRtl="true">
