@@ -238,7 +238,7 @@ footer.footer-note{display:block!important;margin:-10px 0 0!important;padding:0 
  .hero-banner .hero-controls .theme-toggle,.hero-banner .hero-controls .cloud-toggle{width:32px!important;height:32px!important;min-width:32px!important}
 }
 </style>
-</head>
+<style id="memory-persian-keypad-style">.memory-keypad{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:7px}.memory-keypad button{padding:7px 4px;min-height:36px;font-size:15px}.memory-keypad .memory-key-clear{grid-column:1/-1;font-size:12px}</style></head>
 <body>
 <div class="app">
 <header class="hero hero-banner">
@@ -279,7 +279,15 @@ footer.footer-note{display:block!important;margin:-10px 0 0!important;padding:0 
  <div class="toolbar"><button class="primary" type="submit" id="saveBtn">ثبت سرویس</button><button type="button" onclick="resetForm()">پاک‌کردن فرم</button></div>
  </form></div>
 </section>
-<section id="page-memory" class="page"><div class="sectionhead"><h2>حافظه روزهای گذشته</h2></div><p class="muted">برای دیدن جزئیات، روی هر روز بزنید.</p><div class="memory-range card"><h3>خروجی بازه تاریخی</h3><p class="muted">تاریخ شروع و پایان را به شمسی وارد کن؛ نمونه: ۱۴۰۵/۰۸/۱۴</p><div class="fieldgrid"><div class="field"><label for="memoryStart">از تاریخ</label><input id="memoryStart" type="text" autocomplete="off" placeholder="۱۴۰۵/۰۸/۱۴" aria-label="تاریخ شروع شمسی" inputmode="numeric" lang="fa-IR"></div><div class="field"><label for="memoryEnd">تا تاریخ</label><input id="memoryEnd" type="text" autocomplete="off" placeholder="۱۴۰۵/۰۸/۱۴" aria-label="تاریخ پایان شمسی" inputmode="numeric" lang="fa-IR"></div></div><div class="toolbar"><button onclick="exportMemoryRange()">خروجی متن کل بازه</button><button onclick="shareMemoryRange()">اشتراک‌گذاری متن کل بازه</button><button onclick="printMemoryRange()">فاکتور / PDF کل بازه</button><button onclick="shareMemoryRangeImage()">تصویر کل بازه</button></div></div><div id="memoryList"></div></section>
+<section id="page-memory" class="page"><div class="sectionhead"><h2>حافظه روزهای گذشته</h2></div><p class="muted">برای دیدن جزئیات، روی هر روز بزنید.</p><div class="memory-range card"><h3>خروجی بازه تاریخی</h3><p class="muted">تاریخ شروع و پایان را به شمسی وارد کن؛ نمونه: ۱۴۰۵/۰۸/۱۴</p><div class="fieldgrid"><div class="field"><label for="memoryStart">از تاریخ</label><input id="memoryStart" type="text" autocomplete="off" placeholder="۱۴۰۵/۰۸/۱۴" aria-label="تاریخ شروع شمسی" readonly inputmode="none" lang="f<div class="memory-keypad" aria-label="صفحه‌کلید تاریخ شمسی">
+<button type="button" onclick="memoryDateKey('memoryStart','۱')">۱</button><button type="button" onclick="memoryDateKey('memoryStart','۲')">۲</button><button type="button" onclick="memoryDateKey('memoryStart','۳')">۳</button><button type="button" onclick="memoryDateKey('memoryStart','/')">/</button>
+<button type="button" onclick="memoryDateKey('memoryStart','۴')">۴</button><button type="button" onclick="memoryDateKey('memoryStart','۵')">۵</button><button type="button" onclick="memoryDateKey('memoryStart','۶')">۶</button><button type="button" onclick="memoryDateKey('memoryStart','⌫')">⌫</button>
+<button type="button" onclick="memoryDateKey('memoryStart','۷')">۷</button><button type="button" onclick="memoryDateKey('memoryStart','۸')">۸</button><button type="button" onclick="memoryDateKey('memoryStart','۹')">۹</button><button type="button" onclick="memoryDateKey('memoryStart','۰')">۰</button>
+<button type="button" class="memory-key-clear" onclick="memoryDateKey('memoryStart','clear')">پاک کردن</button></div>a-IR"></div><div class="field"><label for="memoryEnd">تا تاریخ</label><input id="memoryEnd" type="text" autocomplete="off" placeholder="۱۴۰۵/۰۸/۱۴" aria-label="تاریخ پایان شمسی" readonly inputmode="none" lang="f<div class="memory-keypad" aria-label="صفحه‌کلید تاریخ شمسی">
+<button type="button" onclick="memoryDateKey('memoryEnd','۱')">۱</button><button type="button" onclick="memoryDateKey('memoryEnd','۲')">۲</button><button type="button" onclick="memoryDateKey('memoryEnd','۳')">۳</button><button type="button" onclick="memoryDateKey('memoryEnd','/')">/</button>
+<button type="button" onclick="memoryDateKey('memoryEnd','۴')">۴</button><button type="button" onclick="memoryDateKey('memoryEnd','۵')">۵</button><button type="button" onclick="memoryDateKey('memoryEnd','۶')">۶</button><button type="button" onclick="memoryDateKey('memoryEnd','⌫')">⌫</button>
+<button type="button" onclick="memoryDateKey('memoryEnd','۷')">۷</button><button type="button" onclick="memoryDateKey('memoryEnd','۸')">۸</button><button type="button" onclick="memoryDateKey('memoryEnd','۹')">۹</button><button type="button" onclick="memoryDateKey('memoryEnd','۰')">۰</button>
+<button type="button" class="memory-key-clear" onclick="memoryDateKey('memoryEnd','clear')">پاک کردن</button></div>a-IR"></div></div><div class="toolbar"><button onclick="exportMemoryRange()">خروجی متن کل بازه</button><button onclick="shareMemoryRange()">اشتراک‌گذاری متن کل بازه</button><button onclick="printMemoryRange()">فاکتور / PDF کل بازه</button><button onclick="shareMemoryRangeImage()">تصویر کل بازه</button></div></div><div id="memoryList"></div></section>
 <section id="page-reports" class="page"><div class="card"><h2>گزارش درآمد</h2><div class="stats"><div class="stat"><span>کل درآمد ثبت‌شده</span><strong id="allTotal">۰</strong></div><div class="stat"><span>سهم فرشاد</span><strong id="allShare">۰</strong></div><div class="stat"><span>تعداد سرویس‌ها</span><strong id="allCount">۰</strong></div></div><div class="field"><label for="reportMonth">گزارش ماه (بر اساس ماه میلادی دستگاه)</label><input id="reportMonth" type="month"></div><div id="monthReport" class="preview"></div><div class="toolbar"><button onclick="exportAllText()">خروجی متنی همه روزها</button><button onclick="backupData()">پشتیبان‌گیری اطلاعات</button><button onclick="document.getElementById('restoreFile').click()">بازیابی پشتیبان</button><input id="restoreFile" type="file" accept="application/json" class="hidden"></div></div></section>
 <section id="page-cloud" class="page"><div class="card"><h2>☁️ پشتیبان‌گیری در حساب گوگل</h2>
 <p class="muted">برای بازیابی اطلاعات روی هر گوشی، با همان حساب گوگل وارد شوید. تنظیمات اتصال از قبل در برنامه قرار دارد؛ برای ورود و همگام‌سازی اینترنت لازم است.</p>
@@ -287,14 +295,7 @@ footer.footer-note{display:block!important;margin:-10px 0 0!important;padding:0 
 <div class="toolbar"><button class="primary" onclick="googleSignIn()">ورود با حساب گوگل</button><button onclick="googleSignOut()">خروج از حساب</button></div>
 <div class="toolbar"><button class="success" onclick="syncCloud(true)">همگام‌سازی همین الان</button><button onclick="backupData()">گرفتن فایل پشتیبان</button></div>
 <p class="muted" id="cloudUser">حساب گوگل: وارد نشده</p><p class="muted">پس از فعال‌سازی، تغییرات اطلاعات هنگام ثبت/ویرایش و همچنین بررسی دوره‌ای هر ۲۴ ساعت همگام می‌شود. برای کارکرد پشتیبان‌گیری، اینترنت لازم است.</p>
-<details><summary>قوانین امنیتی Firestore (پس از ساخت پایگاه داده)</summary><pre style="white-space:pre-wrap;direction:ltr;text-align:left;background:#07101d;padding:12px;border-radius:10px">rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}</pre></details>
+
 </div></section>
 </main>
 
@@ -330,6 +331,7 @@ function dayRecords(day){return records.filter(r=>r.date===day).sort((a,b)=>b.cr
 function total(list){return list.reduce((s,r)=>s+r.count*r.price,0)}
 function countTrips(list){return list.reduce((s,r)=>s+r.count,0)}
 function dayKeys(){return [...new Set(records.map(r=>r.date))].sort((a,b)=>b.localeCompare(a))}
+function memoryDateKey(id,key){const el=$(id);if(!el)return;let v=el.value||'';if(key==='clear')v='';else if(key==='⌫')v=v.slice(0,-1);else if(v.length<10)v+=key;el.value=v;}
 function init(){for(let i=1;i<=15;i++)$('count').add(new Option(i,i));$('serviceDate').value=toJalali(localISO());$('reportMonth').value=localISO().slice(0,7);updateClock();setInterval(updateClock,1000);$('price').addEventListener('input',()=>{let p=$('price');let v=p.value.replace(/[^\d]/g,'');p.value=v?Number(v).toLocaleString('en-US'):'';updatePreview()});$('count').addEventListener('change',updatePreview);$('customer').addEventListener('change',()=>{fillCustomerPhone();updatePreview()});$('customer').addEventListener('input',()=>{const found=lookupCustomerPhone($('customer').value);if(found&&!$('customerPhone').dataset.edited)$('customerPhone').value=found});$('customerPhone').addEventListener('input',()=>{$('customerPhone').dataset.edited='1'});$('serviceForm').addEventListener('submit',saveService);$('reportMonth').addEventListener('change',renderReports);$('restoreFile').addEventListener('change',restoreData);document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));render()}
 function updateClock(){let d=new Date();$('liveDate').textContent=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit',weekday:'long'}).format(d);$('liveTime').textContent=d.toLocaleTimeString('en-GB',{hour12:false})}
 function updatePreview(){let n=Number($('count').value||1),p=num($('price').value);$('calcPreview').textContent=`مبلغ کل: ${toman(n*p)}  |  سهم فرشاد: ${toman(Math.floor(n*p/3))}`+( $('customer').value.trim()?`  |  ${$('count').value} سرویس ${$('customer').value.trim()} از ${$('source').value}`:'')}
