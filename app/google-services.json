@@ -4,24 +4,44 @@
     "project_id": "daftar-farshad",
     "storage_bucket": "daftar-farshad.firebasestorage.app"
   },
-  "client": [{
-    "client_info": {
-      "mobilesdk_app_id": "1:447863970011:android:89eb9ab351ae79e52c14fe",
-      "android_client_info": {"package_name": "ir.farshad.waterinvoice"}
-    },
-    "oauth_client": [{
-      "client_id": "447863970011-k0ufn7bj8e4q3jm5dct8v54ud4pv5ii9.apps.googleusercontent.com",
-      "client_type": 3
-    }],
-    "api_key": [{"current_key": "AIzaSyCLKXAmdazhXOa5_eUyhCTjEoyEuttTRjw"}],
-    "services": {
-      "appinvite_service": {
-        "other_platform_oauth_client": [{
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:447863970011:android:89eb9ab351ae79e52c14fe",
+        "android_client_info": {
+          "package_name": "ir.farshad.waterinvoice"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "447863970011-1rp23e5pnohpa57muis470csjodfpfn1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "ir.farshad.waterinvoice",
+            "certificate_hash": "f8c5dda126fab84e2320c3520001b653b67b97c8"
+          }
+        },
+        {
           "client_id": "447863970011-k0ufn7bj8e4q3jm5dct8v54ud4pv5ii9.apps.googleusercontent.com",
           "client_type": 3
-        }]
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLKXAmdazhXOa5_eUyhCTjEoyEuttTRjw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "447863970011-k0ufn7bj8e4q3jm5dct8v54ud4pv5ii9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
       }
     }
-  }],
+  ],
   "configuration_version": "1"
 }
