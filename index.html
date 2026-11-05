@@ -384,6 +384,41 @@ function initFirebase(c){if(!window.firebase){setCloudStatus('کتابخانه F
 // راه‌اندازی خودکار با تنظیمات پیش‌فرض هنگام باز شدن برنامه
 try { const saved=JSON.parse(localStorage.getItem('waterFirebaseConfig_v1')||'null'); initFirebase(saved || DEFAULT_FIREBASE_CONFIG); } catch(e) { initFirebase(DEFAULT_FIREBASE_CONFIG); }
 async function googleSignIn(){try{if(!fbAuth){let c;try{c=JSON.parse(localStorage.getItem('waterFirebaseConfig_v1')||'null')}catch{}if(!c){c=DEFAULT_FIREBASE_CONFIG;localStorage.setItem('waterFirebaseConfig_v1',JSON.stringify(c))}initFirebase(c)}const provider=new firebase.auth.GoogleAuthProvider();await fbAuth.signInWithPopup(provider);const u=fbAuth.currentUser;if(!u)return;const ref=fbDb.collection('users').doc(u.uid);const snap=await ref.get();if(snap.exists){if(confirm(`برای این حساب، پشتیبان ابری پیدا شد. اطلاعات ابری جایگزین اطلاعات فعلی این گوشی شود؟\nتأیید = بازیابی از ابر\nلغو = نگه‌داشتن اطلاعات گوشی و بارگذاری آن به ابر`)){const d=snap.data();records=Array.isArray(d.records)?d.records:[];localStorage.setItem(STORE,JSON.stringify(records));if(Array.isArray(d.customers))localStorage.setItem('waterServiceCustomers_v1',JSON.stringify(d.customers));if(d.customerPhones&&typeof d.customerPhones==='object'){customerPhones=d.customerPhones;localStorage.setItem('waterServiceCustomerPhones_v1',JSON.stringify(customerPhones))}render();alert('اطلاعات ابری بازیابی شد.')}else await syncCloud(true)}else{await syncCloud(true);alert('اتصال انجام شد و اطلاعات فعلی در حساب گوگل ذخیره شد.')} }catch(e){setCloudStatus('خطا: '+e.message);alert('اتصال انجام نشد. در Firebase باید Google Sign-in فعال و دامنه/مبدأ برنامه مجاز باشد.\n'+e.message)}}
+// Native Android Google sign-in completion. Defined in this script's lexical scope so it can access fbAuth/fbDb.
+window.completeNativeGoogleSignIn = async function(idToken) {
+  if (!window.firebase) throw new Error('کتابخانه Firebase بارگذاری نشده است؛ اینترنت را بررسی کنید.');
+  if (!fbAuth || !fbDb) {
+    let c;
+    try { c = JSON.parse(localStorage.getItem('waterFirebaseConfig_v1') || 'null'); } catch (_) {}
+    initFirebase(c || DEFAULT_FIREBASE_CONFIG);
+  }
+  if (!fbAuth || !fbDb) throw new Error('Firebase آماده نشد. اتصال اینترنت و تنظیمات پروژه را بررسی کنید.');
+  const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
+  await fbAuth.signInWithCredential(credential);
+  const u = fbAuth.currentUser;
+  if (!u) throw new Error('ورود به حساب گوگل انجام نشد.');
+  const ref = fbDb.collection('users').doc(u.uid);
+  const snap = await ref.get();
+  if (snap.exists) {
+    if (confirm('برای این حساب، پشتیبان ابری پیدا شد. اطلاعات ابری جایگزین اطلاعات فعلی این گوشی شود؟\\nتأیید = بازیابی از ابر\\nلغو = نگه‌داشتن اطلاعات گوشی و بارگذاری آن به ابر')) {
+      const d = snap.data();
+      records = Array.isArray(d.records) ? d.records : [];
+      localStorage.setItem(STORE, JSON.stringify(records));
+      if (Array.isArray(d.customers)) localStorage.setItem('waterServiceCustomers_v1', JSON.stringify(d.customers));
+      if (d.customerPhones && typeof d.customerPhones === 'object') {
+        customerPhones = d.customerPhones;
+        localStorage.setItem('waterServiceCustomerPhones_v1', JSON.stringify(customerPhones));
+      }
+      render();
+      alert('اطلاعات ابری بازیابی شد.');
+    } else {
+      await syncCloud(true);
+    }
+  } else {
+    await syncCloud(true);
+    alert('اتصال انجام شد و اطلاعات فعلی در حساب گوگل ذخیره شد.');
+  }
+};
 async function googleSignOut(){try{if(fbAuth)await fbAuth.signOut();setCloudStatus('از حساب گوگل خارج شدید؛ اطلاعات محلی پاک نشده است.')}catch(e){alert(e.message)}}
 function scheduleCloudSync(){clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(()=>syncCloud(false),1200)}
 async function syncCloud(manual=false){try{if(!fbAuth||!fbAuth.currentUser||!fbDb){if(manual)alert('ابتدا تنظیمات Firebase را ذخیره و با گوگل وارد شوید.');return}const u=fbAuth.currentUser;const customers=JSON.parse(localStorage.getItem('waterServiceCustomers_v1')||'[]');await fbDb.collection('users').doc(u.uid).set({records:records,customers:customers,customerPhones:customerPhones,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),schemaVersion:2},{merge:true});setCloudStatus('آخرین همگام‌سازی موفق: '+new Date().toLocaleString('fa-IR'));if(manual)alert('اطلاعات در فضای ابری حساب گوگل ذخیره شد.')}catch(e){setCloudStatus('همگام‌سازی ناموفق: '+e.message);if(manual)alert('ذخیره ابری انجام نشد: '+e.message)}}
