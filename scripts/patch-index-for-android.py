@@ -1,7 +1,10 @@
 from pathlib import Path
 
-path = Path("app/src/main/assets/index.html")
+path = Path("index.html")
 html = path.read_text(encoding="utf-8")
+if "window.AndroidBridge&&typeof window.AndroidBridge.copyText" in html and "window.AndroidBridge&&typeof window.AndroidBridge.printHtml" in html:
+    print("Android bridge patches are already present.")
+    raise SystemExit(0)
 bt = chr(96)
 day_template = bt + "hesab-" + "$" + "{day}.txt" + bt
 factor_template = bt + "factor-" + "$" + "{toJalali(day).replaceAll('/','-')}.png" + bt
