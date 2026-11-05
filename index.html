@@ -238,6 +238,25 @@ footer.footer-note{display:block!important;margin:-10px 0 0!important;padding:0 
  .hero-banner .hero-controls .theme-toggle,.hero-banner .hero-controls .cloud-toggle{width:32px!important;height:32px!important;min-width:32px!important}
 }
 </style>
+<style id="header-datetime-controls-outside">
+/* Keep the date/time in its own narrow frame; place the two controls beside it, outside the frame. */
+.hero-banner{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;column-gap:8px!important;row-gap:0!important;align-items:center!important}
+.hero-banner>.brand-banner{grid-column:1/-1!important;grid-row:1!important;width:100%!important}
+.hero-banner>.hero-datetime{grid-column:1!important;grid-row:2!important;display:flex!important;justify-content:center!important;align-items:center!important;flex-wrap:nowrap!important;gap:clamp(7px,2vw,14px)!important;min-width:0!important;width:100%!important;margin:9px 0 0!important;padding:8px 9px!important;border:1px solid #ffffff55!important;border-radius:12px!important;background:linear-gradient(110deg,#ffffff14,#ffffff08)!important;box-shadow:inset 0 1px 0 #ffffff12!important;box-sizing:border-box!important}
+.hero-banner>.hero-datetime::after{display:none!important;content:none!important}
+.hero-banner>.hero-datetime #liveDate,.hero-banner>.hero-datetime #liveTime{display:block!important;flex:1 1 0!important;min-width:0!important;width:auto!important;text-align:center!important;white-space:nowrap!important;font-weight:800!important}
+.hero-banner>.hero-controls{grid-column:2!important;grid-row:2!important;display:flex!important;justify-content:center!important;align-items:center!important;width:auto!important;min-width:0!important;margin:9px 0 0!important;padding:0!important}
+.hero-banner>.hero-controls>div{display:flex!important;justify-content:center!important;align-items:center!important;gap:6px!important;margin:0!important}
+.hero-banner>.hero-controls .theme-toggle,.hero-banner>.hero-controls .cloud-toggle{width:32px!important;height:32px!important;min-width:32px!important;padding:0!important}
+body.light .hero-banner>.hero-datetime{border-color:#c5d8ec!important;background:linear-gradient(110deg,#ffffff,#edf5ff)!important}
+@media(max-width:480px){
+ .hero-banner{column-gap:6px!important}
+ .hero-banner>.hero-datetime{gap:5px!important;padding:7px 6px!important}
+ .hero-banner>.hero-datetime #liveDate,.hero-banner>.hero-datetime #liveTime{font-size:clamp(11px,3.2vw,14px)!important}
+ .hero-banner>.hero-controls>div{gap:4px!important}
+ .hero-banner>.hero-controls .theme-toggle,.hero-banner>.hero-controls .cloud-toggle{width:29px!important;height:29px!important;min-width:29px!important}
+}
+</style>
 </head>
 <body>
 <div class="app">
