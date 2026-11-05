@@ -43,9 +43,8 @@ jobs:
       - name: Create CI debug keystore and print fingerprints
         run: |
           mkdir -p "$HOME/.config/.android"
-          if [ ! -f "$HOME/.config/.android/debug.keystore" ]; then
-            keytool -genkeypair -v -keystore "$HOME/.config/.android/debug.keystore" -storepass android -alias AndroidDebugKey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-          fi
+          base64 --decode app/ci-debug-keystore.b64 > "$HOME/.config/.android/debug.keystore"
+          chmod 600 "$HOME/.config/.android/debug.keystore"
           gradle signingReport
       - name: Build debug APK
         run: gradle assembleDebug
