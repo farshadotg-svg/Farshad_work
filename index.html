@@ -247,12 +247,19 @@ footer.footer-note{margin-top:12px!important;margin-bottom:4px!important;padding
 <section id="page-memory" class="page"><div class="sectionhead"><h2>حافظه روزهای گذشته</h2></div><p class="muted">برای دیدن جزئیات، روی هر روز بزنید.</p><div id="memoryList"></div></section>
 <section id="page-reports" class="page"><div class="card"><h2>گزارش درآمد</h2><div class="stats"><div class="stat"><span>کل درآمد ثبت‌شده</span><strong id="allTotal">۰</strong></div><div class="stat"><span>سهم فرشاد</span><strong id="allShare">۰</strong></div><div class="stat"><span>تعداد سرویس‌ها</span><strong id="allCount">۰</strong></div></div><div class="field"><label for="reportMonth">گزارش ماه (بر اساس ماه میلادی دستگاه)</label><input id="reportMonth" type="month"></div><div id="monthReport" class="preview"></div><div class="toolbar"><button onclick="exportAllText()">خروجی متنی همه روزها</button><button onclick="backupData()">پشتیبان‌گیری اطلاعات</button><button onclick="document.getElementById('restoreFile').click()">بازیابی پشتیبان</button><input id="restoreFile" type="file" accept="application/json" class="hidden"></div></div></section>
 <section id="page-cloud" class="page"><div class="card"><h2>☁️ پشتیبان‌گیری در حساب گوگل</h2>
-<p class="muted">برای بازیابی اطلاعات روی هر گوشی، با همان حساب گوگل وارد شوید. نیازی به ساخت حساب جداگانه یا وارد کردن تنظیمات نیست؛ فقط با همان حساب گوگل وارد شوید. برای همگام‌سازی اینترنت لازم است.</p>
-<div class="preview" id="cloudStatus">وضعیت: آماده اتصال به حساب گوگل.</div>
+<p class="muted">برای بازیابی اطلاعات روی هر گوشی، با همان حساب گوگل وارد شوید. تنظیمات اتصال از قبل در برنامه قرار دارد؛ برای ورود و همگام‌سازی اینترنت لازم است.</p>
+<div class="preview" id="cloudStatus">وضعیت: هنوز Firebase تنظیم نشده است.</div>
 <div class="toolbar"><button class="primary" onclick="googleSignIn()">ورود با حساب گوگل</button><button onclick="googleSignOut()">خروج از حساب</button></div>
 <div class="toolbar"><button class="success" onclick="syncCloud(true)">همگام‌سازی همین الان</button><button onclick="backupData()">گرفتن فایل پشتیبان</button></div>
-<p class="muted" id="cloudUser">حساب گوگل: وارد نشده</p><p class="muted">پس از ورود با حساب گوگل، تغییرات هنگام ثبت و ویرایش خودکار همگام می‌شوند و هر ۲۴ ساعت نیز پشتیبان‌گیری دوره‌ای انجام می‌شود. برای کارکرد پشتیبان‌گیری، اینترنت لازم است.</p>
-
+<p class="muted" id="cloudUser">حساب گوگل: وارد نشده</p><p class="muted">پس از فعال‌سازی، تغییرات اطلاعات هنگام ثبت/ویرایش و همچنین بررسی دوره‌ای هر ۲۴ ساعت همگام می‌شود. برای کارکرد پشتیبان‌گیری، اینترنت لازم است.</p>
+<details><summary>قوانین امنیتی Firestore (پس از ساخت پایگاه داده)</summary><pre style="white-space:pre-wrap;direction:ltr;text-align:left;background:#07101d;padding:12px;border-radius:10px">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}</pre></details>
 </div></section>
 </main>
 
@@ -307,10 +314,10 @@ function deleteService(id){if(!confirm('این سرویس حذف شود؟'))retu
 function togglePaid(id){records=records.map(r=>r.id===id?{...r,paid:!r.paid,updatedAt:Date.now()}:r);persist()}
 function deleteDay(day){if(!confirm('تمام سرویس‌های این روز حذف شوند؟ این کار قابل بازگشت نیست.'))return;records=records.filter(r=>r.date!==day);expanded.delete(day);persist()}
 function dayText(day){let list=dayRecords(day),d=new Date(day+'T12:00:00'),fmt=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{day:'numeric',month:'numeric'}),parts=fmt.formatToParts(d),dayNum=parts.find(p=>p.type==='day').value,month=parts.find(p=>p.type==='month').value;let lines=[`${dayNum} برج ${month}`];list.slice().reverse().forEach(r=>{lines.push(`${r.count} سرویس ${r.customer} از ${r.source} ${enNum(r.count*r.price)}${r.paid?'✅️':''}`);if(r.description)lines.push(`توضیحات: ${r.description}`)});lines.push('',`👍${enNum(Math.floor(total(list)/3))}`);return lines.join('\n')}
-function exportDay(day){const text=dayText(day);if(window.AndroidBridge&&typeof window.AndroidBridge.copyText==='function'){window.AndroidBridge.copyText(text);alert('گزارش کامل روز در کلیپ‌بورد کپی شد.');return}if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(()=>alert('گزارش کامل روز کپی شد.')).catch(()=>downloadText(`hesab-${day}.txt`,text));return}downloadText(`hesab-${day}.txt`,text)}
+function exportDay(day){downloadText(`hesab-${day}.txt`,dayText(day))}
 function exportAllText(){let txt=dayKeys().slice().reverse().map(dayText).join('\n\n--------------------\n\n');downloadText('hesab-kol-roozha.txt',txt)}
 function downloadText(name,text){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
-async function shareDay(day){const text=dayText(day);if(window.AndroidBridge&&typeof window.AndroidBridge.shareText==='function'){window.AndroidBridge.shareText('حساب سرویس‌های آب',text);return}if(navigator.share){try{await navigator.share({title:'حساب سرویس‌های آب',text})}catch(e){if(e.name!=='AbortError')alert('اشتراک‌گذاری متن انجام نشد.')}}else{try{await navigator.clipboard.writeText(text);alert('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود؛ متن کپی شد.')}catch{downloadText(`hesab-${day}.txt`,text)}}}
+async function shareDay(day){let text=dayText(day);if(navigator.share){try{await navigator.share({title:'حساب سرویس‌های آب',text})}catch(e){}}else{try{await navigator.clipboard.writeText(text);alert('متن روز کپی شد.')}catch{downloadText(`hesab-${day}.txt`,text)}}}
 async function shareDayImage(day){
  let list=dayRecords(day),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),W=1000,rowH=86,headerH=270,footerH=200;
  if(!ctx){alert('ساخت تصویر در این مرورگر پشتیبانی نمی‌شود.');return}
@@ -325,7 +332,6 @@ async function shareDayImage(day){
  if(r.description){ctx.fillStyle='#5c6e82';ctx.font='15px Tahoma';ctx.fillText(r.description,945,y+58)}y+=rowH});
  y+=20;ctx.fillStyle='#102947';ctx.fillRect(25,y,W-50,footerH-20);ctx.fillStyle='#fff';ctx.font='bold 25px Tahoma';ctx.fillText('درآمد کل: '+enNum(total(list))+' تومان',945,y+55);ctx.fillStyle='#ffc342';ctx.fillText('سهم فرشاد: '+enNum(Math.floor(total(list)/3))+' تومان',945,y+105);
  const blob=await new Promise(resolve=>{try{canvas.toBlob(resolve,'image/png')}catch(e){resolve(null)}});if(!blob){alert('ساخت تصویر ممکن نشد. لطفاً صفحه را در مرورگر Chrome باز کنید و دوباره تلاش کنید.');return}
- if(window.AndroidBridge&&typeof window.AndroidBridge.shareImageBase64==='function'){try{const bytes=new Uint8Array(await blob.arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));window.AndroidBridge.shareImageBase64(btoa(binary),`factor-${toJalali(day).replaceAll('/','-')}.png`);return}catch(e){alert('آماده‌سازی تصویر برای اشتراک‌گذاری ناموفق بود: '+e.message);return}}
  const file=typeof File==='function'?new File([blob],`factor-${day}.png`,{type:'image/png'}):null;
  if(file&&navigator.share&&navigator.canShare){try{if(navigator.canShare({files:[file]})){await navigator.share({title:'فاکتور حساب روز '+toJalali(day),files:[file]});return}}catch(e){if(e.name==='AbortError')return}}
  if(navigator.share){try{await navigator.share({title:'فاکتور حساب روز '+toJalali(day),text:'تصویر فاکتور حساب روز '+toJalali(day)})}catch(e){if(e.name==='AbortError')return}}
@@ -355,7 +361,7 @@ footer.footer-note{margin-top:4px!important;margin-bottom:0!important;padding:3p
 .hero-banner .hero-datetime::after{content:""!important;position:absolute!important;left:33.333%!important;right:0!important;top:2px!important;bottom:2px!important;border:1px solid #ffffff55!important;border-radius:12px!important;background:linear-gradient(110deg,#ffffff0d,#ffffff05)!important;pointer-events:none!important;z-index:0!important}
 .hero-banner .hero-datetime #liveTime,.hero-banner .hero-datetime #liveDate{position:relative!important;z-index:1!important;font-size:clamp(14px,3.7vw,18px)!important}
 @media(max-width:480px){.hero-banner .hero-datetime #liveTime,.hero-banner .hero-datetime #liveDate{font-size:clamp(13px,3.5vw,16px)!important}}
-</style><h1>فاکتور سرویس‌های حمل آب</h1><p>${faDate(day)} · ${toJalali(day)}</p><table><thead><tr><th>مشتری</th><th>تعداد</th><th>قیمت هر سرویس</th><th>محل آب‌گیری</th><th>جمع</th><th>پرداخت</th></tr></thead><tbody>${list.map(r=>`<tr><td>${esc(r.customer)}</td><td>${r.count}</td><td>${enNum(r.price)}</td><td>${esc(r.source)}</td><td>${enNum(r.count*r.price)}</td><td>${r.paid?'✓ پرداخت شده':'✕ پرداخت نشده'}</td></tr>`).join('')}</tbody></table><div class="sum">درآمد کل: ${enNum(total(list))} تومان</div><div class="sum">سهم فرشاد: ${enNum(Math.floor(total(list)/3))} تومان</div><p class="muted">خروجی چاپ را می‌توانید به‌صورت PDF ذخیره کنید.</p><script>window.onload=()=>window.print()<\/script></html>`;if(window.AndroidBridge&&typeof window.AndroidBridge.printHtml==='function'){window.AndroidBridge.printHtml(html2);return}let w=window.open('','_blank');if(!w){alert('مرورگر پنجره جدید را مسدود کرده؛ اجازه بازشدن پنجره را بدهید.');return}w.document.open();w.document.write(html2);w.document.close()}
+</style><h1>فاکتور سرویس‌های حمل آب</h1><p>${faDate(day)} · ${toJalali(day)}</p><table><thead><tr><th>مشتری</th><th>تعداد</th><th>قیمت هر سرویس</th><th>محل آب‌گیری</th><th>جمع</th><th>پرداخت</th></tr></thead><tbody>${list.map(r=>`<tr><td>${esc(r.customer)}</td><td>${r.count}</td><td>${enNum(r.price)}</td><td>${esc(r.source)}</td><td>${enNum(r.count*r.price)}</td><td>${r.paid?'✓ پرداخت شده':'✕ پرداخت نشده'}</td></tr>`).join('')}</tbody></table><div class="sum">درآمد کل: ${enNum(total(list))} تومان</div><div class="sum">سهم فرشاد: ${enNum(Math.floor(total(list)/3))} تومان</div><p class="muted">خروجی چاپ را می‌توانید به‌صورت PDF ذخیره کنید.</p><script>window.onload=()=>window.print()<\/script></html>`;let w=window.open('','_blank');if(!w){alert('مرورگر پنجره جدید را مسدود کرده؛ اجازه بازشدن پنجره را بدهید.');return}w.document.open();w.document.write(html2);w.document.close()}
 function renderReports(){let month=$('reportMonth').value;if(!month)return;let list=records.filter(r=>r.date.startsWith(month));$('monthReport').innerHTML=`<b>${month}</b><br>تعداد سرویس: ${faNum(countTrips(list))}<br>درآمد کل: ${toman(total(list))}<br>سهم فرشاد: ${toman(Math.floor(total(list)/3))}<br>پرداخت‌نشده: ${toman(total(list.filter(r=>!r.paid)))}`}
 function backupData(){downloadText('backup-hesab-ab.json',JSON.stringify({version:2,records,customers:JSON.parse(localStorage.getItem('waterServiceCustomers_v1')||'[]'),customerPhones:customerPhones},null,2))}
 function restoreData(e){let f=e.target.files[0];if(!f)return;let reader=new FileReader();reader.onload=()=>{try{let x=JSON.parse(reader.result),arr=Array.isArray(x)?x:x.records;if(!Array.isArray(arr))throw Error();if(!confirm('اطلاعات فعلی با فایل پشتیبان جایگزین شود؟'))return;records=arr;if(x&&x.customerPhones&&typeof x.customerPhones==='object'&&!Array.isArray(x.customerPhones)){customerPhones=x.customerPhones;localStorage.setItem('waterServiceCustomerPhones_v1',JSON.stringify(customerPhones))}else{records.forEach(r=>{if(r.customer&&r.phone)rememberCustomerPhone(r.customer,r.phone)})}persist();alert('بازیابی انجام شد.')}catch{alert('فایل پشتیبان معتبر نیست.')}e.target.value=''};reader.readAsText(f)}
@@ -373,50 +379,15 @@ const DEFAULT_FIREBASE_CONFIG={apiKey:'AIzaSyATjxNZPNPo8Ulxr1VHMpr_Kppck6ka6BM',
 function firebaseConfigFromForm(){return {...DEFAULT_FIREBASE_CONFIG}}
 function setCloudStatus(t){const e=$('cloudStatus');if(e)e.textContent=t}
 function saveFirebaseConfig(){const c=firebaseConfigFromForm();if(!c.apiKey||!c.authDomain||!c.projectId||!c.appId){alert('لطفاً هر چهار مقدار Firebase را وارد کنید.');return}try{localStorage.setItem('waterFirebaseConfig_v1',JSON.stringify(c));initFirebase(c);alert('تنظیمات ذخیره شد. حالا با حساب گوگل وارد شوید.')}catch(e){setCloudStatus('خطا در راه‌اندازی Firebase: '+e.message);alert('خطا در راه‌اندازی Firebase. تنظیمات را بررسی کنید.')}}
-function initFirebase(c){if(!window.firebase){setCloudStatus('کتابخانه Firebase بارگذاری نشد؛ اینترنت را بررسی کنید.');return}fbApp= firebase.apps.length?firebase.app():firebase.initializeApp(c);fbAuth=fbApp.auth();fbDb=fbApp.firestore();window.cloudReady=true;fbAuth.onAuthStateChanged(u=>{if($('cloudUser'))$('cloudUser').textContent=u?'حساب گوگل: '+u.email+' · متصل':'حساب گوگل: وارد نشده';setCloudStatus(u?'به فضای ابری متصل هستید.':'آماده اتصال؛ برای پشتیبان‌گیری وارد حساب گوگل شوید.');});}
+function initFirebase(c){if(!window.firebase){setCloudStatus('کتابخانه Firebase بارگذاری نشد؛ اینترنت را بررسی کنید.');return}fbApp= firebase.apps.length?firebase.app():firebase.initializeApp(c);fbAuth=fbApp.auth();fbDb=fbApp.firestore();window.cloudReady=true;fbAuth.onAuthStateChanged(u=>{if($('cloudUser'))$('cloudUser').textContent=u?'حساب گوگل: '+u.email+' · متصل':'حساب گوگل: وارد نشده';setCloudStatus(u?'به فضای ابری متصل هستید.':'Firebase آماده است؛ برای اتصال وارد حساب گوگل شوید.');});}
 // راه‌اندازی خودکار با تنظیمات پیش‌فرض هنگام باز شدن برنامه
 try { const saved=JSON.parse(localStorage.getItem('waterFirebaseConfig_v1')||'null'); initFirebase(saved || DEFAULT_FIREBASE_CONFIG); } catch(e) { initFirebase(DEFAULT_FIREBASE_CONFIG); }
-async function googleSignIn(){try{if(!fbAuth){let c;try{c=JSON.parse(localStorage.getItem('waterFirebaseConfig_v1')||'null')}catch{}if(!c){c=DEFAULT_FIREBASE_CONFIG;localStorage.setItem('waterFirebaseConfig_v1',JSON.stringify(c))}initFirebase(c)}const provider=new firebase.auth.GoogleAuthProvider();await fbAuth.signInWithPopup(provider);const u=fbAuth.currentUser;if(!u)return;const ref=fbDb.collection('users').doc(u.uid);const snap=await ref.get();if(snap.exists){if(confirm(`برای این حساب، پشتیبان ابری پیدا شد. اطلاعات ابری جایگزین اطلاعات فعلی این گوشی شود؟\nتأیید = بازیابی از ابر\nلغو = نگه‌داشتن اطلاعات گوشی و بارگذاری آن به ابر`)){const d=snap.data();records=Array.isArray(d.records)?d.records:[];localStorage.setItem(STORE,JSON.stringify(records));if(Array.isArray(d.customers))localStorage.setItem('waterServiceCustomers_v1',JSON.stringify(d.customers));if(d.customerPhones&&typeof d.customerPhones==='object'){customerPhones=d.customerPhones;localStorage.setItem('waterServiceCustomerPhones_v1',JSON.stringify(customerPhones))}render();alert('اطلاعات ابری بازیابی شد.')}else await syncCloud(true)}else{await syncCloud(true);alert('اتصال انجام شد و اطلاعات فعلی در حساب گوگل ذخیره شد.')} }catch(e){setCloudStatus('خطا: '+e.message);alert('اتصال انجام نشد. ورود گوگل انجام نشد. اتصال اینترنت یا تنظیمات ورود برنامه را بررسی کنید.\n'+e.message)}}
-// Native Android Google sign-in completion. Defined in this script's lexical scope so it can access fbAuth/fbDb.
-window.completeNativeGoogleSignIn = async function(idToken) {
-  if (!window.firebase) throw new Error('کتابخانه Firebase بارگذاری نشده است؛ اینترنت را بررسی کنید.');
-  if (!fbAuth || !fbDb) {
-    let c;
-    try { c = JSON.parse(localStorage.getItem('waterFirebaseConfig_v1') || 'null'); } catch (_) {}
-    initFirebase(c || DEFAULT_FIREBASE_CONFIG);
-  }
-  if (!fbAuth || !fbDb) throw new Error('Firebase آماده نشد. اتصال اینترنت و تنظیمات پروژه را بررسی کنید.');
-  const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
-  await fbAuth.signInWithCredential(credential);
-  const u = fbAuth.currentUser;
-  if (!u) throw new Error('ورود به حساب گوگل انجام نشد.');
-  const ref = fbDb.collection('users').doc(u.uid);
-  const snap = await ref.get();
-  if (snap.exists) {
-    if (confirm('برای این حساب، پشتیبان ابری پیدا شد. اطلاعات ابری جایگزین اطلاعات فعلی این گوشی شود؟\\nتأیید = بازیابی از ابر\\nلغو = نگه‌داشتن اطلاعات گوشی و بارگذاری آن به ابر')) {
-      const d = snap.data();
-      records = Array.isArray(d.records) ? d.records : [];
-      localStorage.setItem(STORE, JSON.stringify(records));
-      if (Array.isArray(d.customers)) localStorage.setItem('waterServiceCustomers_v1', JSON.stringify(d.customers));
-      if (d.customerPhones && typeof d.customerPhones === 'object') {
-        customerPhones = d.customerPhones;
-        localStorage.setItem('waterServiceCustomerPhones_v1', JSON.stringify(customerPhones));
-      }
-      render();
-      alert('اطلاعات ابری بازیابی شد.');
-    } else {
-      await syncCloud(true);
-    }
-  } else {
-    await syncCloud(true);
-    alert('اتصال انجام شد و اطلاعات فعلی در حساب گوگل ذخیره شد.');
-  }
-};
+async function googleSignIn(){try{if(!fbAuth){let c;try{c=JSON.parse(localStorage.getItem('waterFirebaseConfig_v1')||'null')}catch{}if(!c){c=DEFAULT_FIREBASE_CONFIG;localStorage.setItem('waterFirebaseConfig_v1',JSON.stringify(c))}initFirebase(c)}const provider=new firebase.auth.GoogleAuthProvider();await fbAuth.signInWithPopup(provider);const u=fbAuth.currentUser;if(!u)return;const ref=fbDb.collection('users').doc(u.uid);const snap=await ref.get();if(snap.exists){if(confirm(`برای این حساب، پشتیبان ابری پیدا شد. اطلاعات ابری جایگزین اطلاعات فعلی این گوشی شود؟\nتأیید = بازیابی از ابر\nلغو = نگه‌داشتن اطلاعات گوشی و بارگذاری آن به ابر`)){const d=snap.data();records=Array.isArray(d.records)?d.records:[];localStorage.setItem(STORE,JSON.stringify(records));if(Array.isArray(d.customers))localStorage.setItem('waterServiceCustomers_v1',JSON.stringify(d.customers));if(d.customerPhones&&typeof d.customerPhones==='object'){customerPhones=d.customerPhones;localStorage.setItem('waterServiceCustomerPhones_v1',JSON.stringify(customerPhones))}render();alert('اطلاعات ابری بازیابی شد.')}else await syncCloud(true)}else{await syncCloud(true);alert('اتصال انجام شد و اطلاعات فعلی در حساب گوگل ذخیره شد.')} }catch(e){setCloudStatus('خطا: '+e.message);alert('اتصال انجام نشد. در Firebase باید Google Sign-in فعال و دامنه/مبدأ برنامه مجاز باشد.\n'+e.message)}}
 async function googleSignOut(){try{if(fbAuth)await fbAuth.signOut();setCloudStatus('از حساب گوگل خارج شدید؛ اطلاعات محلی پاک نشده است.')}catch(e){alert(e.message)}}
 function scheduleCloudSync(){clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(()=>syncCloud(false),1200)}
-async function syncCloud(manual=false){try{if(!fbAuth||!fbAuth.currentUser||!fbDb){if(manual)alert('ابتدا با حساب گوگل وارد شوید.');return}const u=fbAuth.currentUser;const customers=JSON.parse(localStorage.getItem('waterServiceCustomers_v1')||'[]');await fbDb.collection('users').doc(u.uid).set({records:records,customers:customers,customerPhones:customerPhones,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),schemaVersion:2},{merge:true});setCloudStatus('آخرین همگام‌سازی موفق: '+new Date().toLocaleString('fa-IR'));if(manual)alert('اطلاعات در فضای ابری حساب گوگل ذخیره شد.')}catch(e){setCloudStatus('همگام‌سازی ناموفق: '+e.message);if(manual)alert('ذخیره ابری انجام نشد: '+e.message)}}
+async function syncCloud(manual=false){try{if(!fbAuth||!fbAuth.currentUser||!fbDb){if(manual)alert('ابتدا تنظیمات Firebase را ذخیره و با گوگل وارد شوید.');return}const u=fbAuth.currentUser;const customers=JSON.parse(localStorage.getItem('waterServiceCustomers_v1')||'[]');await fbDb.collection('users').doc(u.uid).set({records:records,customers:customers,customerPhones:customerPhones,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),schemaVersion:2},{merge:true});setCloudStatus('آخرین همگام‌سازی موفق: '+new Date().toLocaleString('fa-IR'));if(manual)alert('اطلاعات در فضای ابری حساب گوگل ذخیره شد.')}catch(e){setCloudStatus('همگام‌سازی ناموفق: '+e.message);if(manual)alert('ذخیره ابری انجام نشد: '+e.message)}}
 setInterval(()=>{if(window.cloudReady&&fbAuth&&fbAuth.currentUser)syncCloud(false)},24*60*60*1000);
-try{const c=DEFAULT_FIREBASE_CONFIG;localStorage.setItem('waterFirebaseConfig_v1',JSON.stringify(c));initFirebase(c)}catch(e){setCloudStatus('آماده‌سازی فضای ابری ناموفق بود: '+e.message)}
+try{const c=DEFAULT_FIREBASE_CONFIG;localStorage.setItem('waterFirebaseConfig_v1',JSON.stringify(c));initFirebase(c)}catch(e){setCloudStatus('راه‌اندازی Firebase ناموفق بود: '+e.message)}
 (function setupTheme(){let mode='dark';try{mode=localStorage.getItem('water-accounting-theme')||'dark'}catch(e){}applyTheme(mode);document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('themeToggle');if(b)b.addEventListener('click',()=>{const next=document.body.classList.contains('light')?'dark':'light';applyTheme(next);try{localStorage.setItem('water-accounting-theme',next)}catch(e){}})})})();
 </script>
 <footer class="footer-note" style="padding:8px 0 18px">طراحی شده با عشق برای ❤️Farshad Moqadam</footer>
