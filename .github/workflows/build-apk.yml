@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'scripts/**'
       - 'app/**'
       - 'build.gradle'
       - 'settings.gradle'
@@ -23,6 +24,7 @@ jobs:
           test -s index.html || (echo 'Missing or empty index.html: upload the original app HTML to repository root.' && exit 1)
           test -s app/google-services.json || (echo 'Missing app/google-services.json' && exit 1)
           python3 scripts/patch-index-for-android.py
+          python3 scripts/patch-memory-range.py
           python3 scripts/patch-memory-range.py
           if ! git diff --quiet -- index.html; then
             git config user.name "github-actions[bot]"
