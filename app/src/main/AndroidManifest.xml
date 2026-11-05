@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <application android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:label="فاکتور سرویس آب"
+        android:label="Hi Farshad"
         android:usesCleartextTraffic="false"
         android:allowBackup="true"
         android:supportsRtl="true">
