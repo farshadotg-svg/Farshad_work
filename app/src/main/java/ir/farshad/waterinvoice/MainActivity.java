@@ -68,16 +68,46 @@ public class MainActivity extends Activity {
 
     private void installNativeGoogleSignInOverride() {
         String script =
+            "window.completeNativeGoogleSignIn = async function(idToken) {" +
+            " const waitForFirebase = async () => {" +
+            "  const deadline = Date.now() + 15000;" +
+            "  while ((!window.firebase || !window.firebase.auth || !window.firebase.firestore || typeof fbAuth === 'undefined' || !fbAuth || typeof fbDb === 'undefined' || !fbDb) && Date.now() < deadline) {" +
+            "   await new Promise(resolve => setTimeout(resolve, 250));" +
+            "  }" +
+            "  if (window.firebase && window.firebase.auth && window.firebase.firestore && (typeof fbAuth === 'undefined' || !fbAuth || typeof fbDb === 'undefined' || !fbDb)) {" +
+            "   if (typeof initFirebase === 'function' && typeof DEFAULT_FIREBASE_CONFIG !== 'undefined') initFirebase(DEFAULT_FIREBASE_CONFIG);" +
+            "  }" +
+            "  if (!window.firebase || !window.firebase.auth || !window.firebase.firestore) throw new Error('کتابخانه Firebase بارگذاری نشد؛ اینترنت گوشی را بررسی کنید.');" +
+            "  if (typeof fbAuth === 'undefined' || !fbAuth || typeof fbDb === 'undefined' || !fbDb) throw new Error('راه‌اندازی Firebase کامل نشد. برنامه را ببندید و دوباره باز کنید.');" +
+            " };" +
+            " await waitForFirebase();" +
+            " const credential = firebase.auth.GoogleAuthProvider.credential(idToken);" +
+            " await fbAuth.signInWithCredential(credential);" +
+            " const u = fbAuth.currentUser;" +
+            " if (!u) throw new Error('ورود انجام نشد.');" +
+            " const ref = fbDb.collection('users').doc(u.uid);" +
+            " const snap = await ref.get();" +
+            " if (snap.exists) {" +
+            "  if (confirm('برای این حساب، پشتیبان ابری پیدا شد. اطلاعات ابری جایگزین اطلاعات فعلی این گوشی شود؟\\nتأیید = بازیابی از ابر\\nلغو = نگه‌داشتن اطلاعات گوشی و بارگذاری آن به ابر')) {" +
+            "   const d = snap.data(); records = Array.isArray(d.records) ? d.records : [];" +
+            "   localStorage.setItem(STORE, JSON.stringify(records));" +
+            "   if (Array.isArray(d.customers)) localStorage.setItem('waterServiceCustomers_v1', JSON.stringify(d.customers));" +
+            "   if (d.customerPhones && typeof d.customerPhones === 'object') { customerPhones = d.customerPhones; localStorage.setItem('waterServiceCustomerPhones_v1', JSON.stringify(customerPhones)); }" +
+            "   render(); alert('اطلاعات ابری بازیابی شد.');" +
+            "  } else { await syncCloud(true); }" +
+            " } else { await syncCloud(true); alert('اتصال انجام شد و اطلاعات فعلی در حساب گوگل ذخیره شد.'); }" +
+            "};" +
             "window.googleSignIn = async function() {" +
             " try {" +
-            "  if (typeof window.completeNativeGoogleSignIn !== 'function') throw new Error('بخش ورود گوگل بارگذاری نشده است.');" +
-            "  const idToken = await new Promise((resolve, reject) => {" +
-            "   window.onNativeGoogleSignInSuccess = resolve;" +
-            "   window.onNativeGoogleSignInError = reject;" +
-            "   window.AndroidGoogleAuth.signIn();" +
-            "  });" +
-            "  await window.completeNativeGoogleSignIn(idToken);" +
-            " } catch(e) { alert('ورود با گوگل انجام نشد. ' + (e && e.message ? e.message : e)); }" +
+            "  if (typeof window.AndroidGoogleAuth !== 'undefined' && window.AndroidGoogleAuth) {" +
+            "   const idToken = await new Promise((resolve, reject) => {" +
+            "    window.onNativeGoogleSignInSuccess = resolve;" +
+            "    window.onNativeGoogleSignInError = reject;" +
+            "    window.AndroidGoogleAuth.signIn();" +
+            "   });" +
+            "   await window.completeNativeGoogleSignIn(idToken);" +
+            "  } else { throw new Error('ورود گوگل اندروید در دسترس نیست.'); }" +
+            " } catch(e) { setCloudStatus('خطا: ' + (e && e.message ? e.message : e)); alert('ورود با گوگل انجام نشد. ' + (e && e.message ? e.message : e)); }" +
             "};";
         webView.evaluateJavascript(script, null);
     }
