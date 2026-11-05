@@ -25,7 +25,6 @@ jobs:
           test -s app/google-services.json || (echo 'Missing app/google-services.json' && exit 1)
           python3 scripts/patch-index-for-android.py
           python3 scripts/patch-memory-range.py
-          python3 scripts/patch-memory-range.py
           if ! git diff --quiet -- index.html; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
