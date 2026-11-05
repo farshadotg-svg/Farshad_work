@@ -70,28 +70,14 @@ public class MainActivity extends Activity {
         String script =
             "window.googleSignIn = async function() {" +
             " try {" +
-            "  if (typeof fbAuth === 'undefined' || !fbAuth || typeof fbDb === 'undefined' || !fbDb) throw new Error('Firebase هنوز آماده نیست. اینترنت را بررسی کنید.');" +
+            "  if (typeof window.completeNativeGoogleSignIn !== 'function') throw new Error('بخش ورود گوگل بارگذاری نشده است.');" +
             "  const idToken = await new Promise((resolve, reject) => {" +
             "   window.onNativeGoogleSignInSuccess = resolve;" +
             "   window.onNativeGoogleSignInError = reject;" +
             "   window.AndroidGoogleAuth.signIn();" +
             "  });" +
-            "  const credential = firebase.auth.GoogleAuthProvider.credential(idToken);" +
-            "  await fbAuth.signInWithCredential(credential);" +
-            "  const u = fbAuth.currentUser;" +
-            "  if (!u) throw new Error('ورود انجام نشد.');" +
-            "  const ref = fbDb.collection('users').doc(u.uid);" +
-            "  const snap = await ref.get();" +
-            "  if (snap.exists) {" +
-            "   if (confirm('برای این حساب، پشتیبان ابری پیدا شد. اطلاعات ابری جایگزین اطلاعات فعلی این گوشی شود؟\\nتأیید = بازیابی از ابر\\nلغو = نگه‌داشتن اطلاعات گوشی و بارگذاری آن به ابر')) {" +
-            "    const d = snap.data(); records = Array.isArray(d.records) ? d.records : [];" +
-            "    localStorage.setItem(STORE, JSON.stringify(records));" +
-            "    if (Array.isArray(d.customers)) localStorage.setItem('waterServiceCustomers_v1', JSON.stringify(d.customers));" +
-            "    if (d.customerPhones && typeof d.customerPhones === 'object') { customerPhones = d.customerPhones; localStorage.setItem('waterServiceCustomerPhones_v1', JSON.stringify(customerPhones)); }" +
-            "    render(); alert('اطلاعات ابری بازیابی شد.');" +
-            "   } else { await syncCloud(true); }" +
-            "  } else { await syncCloud(true); alert('اتصال انجام شد و اطلاعات فعلی در حساب گوگل ذخیره شد.'); }" +
-            " } catch(e) { setCloudStatus('خطا: ' + e.message); alert('اتصال انجام نشد.\\n' + e.message); }" +
+            "  await window.completeNativeGoogleSignIn(idToken);" +
+            " } catch(e) { alert('ورود با گوگل انجام نشد. ' + (e && e.message ? e.message : e)); }" +
             "};";
         webView.evaluateJavascript(script, null);
     }
