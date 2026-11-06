@@ -64,9 +64,12 @@ html = html[:pstart] + payment + html[pend:]
 # toJalali(), which expects an ISO Gregorian day key and throws on Jalali text.
 old_label = "function memoryRangeLabel(start,end){return toJalali(start)+' تا '+toJalali(end)}"
 new_label = "function memoryRangeLabel(start,end){return String(start||'').trim()+' تا '+String(end||'').trim()}"
-if html.count(old_label) != 1:
-    raise SystemExit("Could not safely locate the memory range label function.")
-html = html.replace(old_label, new_label)
+if html.count(old_label) == 1:
+    html = html.replace(old_label, new_label)
+elif html.count(new_label) == 1:
+    print("Memory range label already uses the Jalali input text; continuing.")
+else:
+    raise SystemExit("Could not safely locate either version of the memory range label function.")
 
 path.write_text(html, encoding="utf-8")
 print("Rebuilt only the memory page; preserved stored records and other pages.")
