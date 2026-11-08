@@ -18,6 +18,9 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+      - name: Select uploaded app HTML
+        run: |
+          if [ ! -s index.html ] && [ -s index-2.html ]; then cp index-2.html index.html; fi
       - name: Require app HTML and Firebase config
         run: |
           test -s index.html || (echo 'Missing or empty index.html: upload the original app HTML to repository root.' && exit 1)
