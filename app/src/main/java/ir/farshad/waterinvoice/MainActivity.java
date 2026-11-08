@@ -150,7 +150,7 @@ public class MainActivity extends Activity {
             " const ref = fbDb.collection('users').doc(u.uid);" +
             " const snap = await ref.get();" +
             " if (snap.exists) {" +
-            "  if (confirm('برای این حساب، پشتیبان ابری پیدا شد. اطلاعات ابری جایگزین اطلاعات فعلی این گوشی شود؟\\nتأیید = بازیابی از ابر\\nلغو = نگه‌داشتن اطلاعات گوشی و بارگذاری آن به ابر')) {" +
+            "  if (await window.appConfirm('برای این حساب، پشتیبان ابری پیدا شد. اطلاعات ابری جایگزین اطلاعات فعلی این گوشی شود؟\\nتأیید = بازیابی از ابر\\nلغو = نگه‌داشتن اطلاعات گوشی و بارگذاری آن به ابر')) {" +
             "   const d = snap.data(); records = Array.isArray(d.records) ? d.records : [];" +
             "   localStorage.setItem(STORE, JSON.stringify(records));" +
             "   if (Array.isArray(d.customers)) localStorage.setItem('waterServiceCustomers_v1', JSON.stringify(d.customers));" +
