@@ -4,9 +4,12 @@ import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
+import android.os.Environment;
 import android.os.CancellationSignal;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
@@ -18,6 +21,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.ValueCallback;
+import android.provider.MediaStore;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
@@ -167,13 +171,7 @@ public class MainActivity extends Activity {
             "  } else { throw new Error('ورود گوگل اندروید در دسترس نیست.'); }" +
             " } catch(e) { setCloudStatus('خطا: ' + (e && e.message ? e.message : e)); alert('ورود با گوگل انجام نشد. ' + (e && e.message ? e.message : e)); }" +
             "};";
-        script +=
-            "(function(){" +
-            "const css = document.createElement('style');" +
-            "css.textContent = '#appThemedNotice{position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center;padding:22px;direction:rtl;font-family:inherit}#appThemedNotice .notice-card{width:min(92vw,390px);background:#171b25;color:#f4f5f8;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:22px;box-shadow:0 18px 55px rgba(0,0,0,.48);text-align:center}#appThemedNotice .notice-title{font-size:16px;font-weight:700;margin:0 0 12px;color:#f4f5f8}#appThemedNotice .notice-body{font-size:14px;line-height:1.9;white-space:pre-wrap;color:#d5d9e2;margin-bottom:18px;overflow-wrap:anywhere}#appThemedNotice button{border:0;border-radius:11px;padding:10px 25px;background:var(--accent,#64748b);color:#fff;font:inherit;font-weight:700;min-width:100px}';" +
-            "document.head.appendChild(css);" +
-            "window.alert = function(message){const old=document.getElementById('appThemedNotice');if(old)old.remove();const overlay=document.createElement('div');overlay.id='appThemedNotice';const card=document.createElement('div');card.className='notice-card';const title=document.createElement('div');title.className='notice-title';title.textContent='پیام برنامه';const body=document.createElement('div');body.className='notice-body';body.textContent=String(message==null?'':message);const btn=document.createElement('button');btn.textContent='متوجه شدم';btn.onclick=()=>overlay.remove();card.append(title,body,btn);overlay.appendChild(card);overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});document.body.appendChild(overlay);};" +
-            "})();";
+
         webView.evaluateJavascript(script, null);
     }
 
@@ -301,6 +299,67 @@ public class MainActivity extends Activity {
                     android.widget.Toast.makeText(MainActivity.this, "ذخیره تصویر ناموفق بود: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
                 }
             });
+        }
+
+        @JavascriptInterface public boolean saveImageToGalleryBase64(String encoded, String filename) {
+            Uri imageUri = null;
+            try {
+                byte[] imageBytes = Base64.decode(encoded, Base64.DEFAULT);
+                String normalizedName = (filename == null || filename.trim().isEmpty() ? "gozaresh.png" : filename)
+                        .replaceAll("[^A-Za-z0-9._-]", "_");
+                final String safeName = normalizedName.toLowerCase().endsWith(".png")
+                        ? normalizedName : normalizedName + ".png";
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.Images.Media.DISPLAY_NAME, safeName);
+                    values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+                    values.put(MediaStore.Images.Media.RELATIVE_PATH,
+                            Environment.DIRECTORY_PICTURES + "/دفتر هوشمند فرشاد");
+                    values.put(MediaStore.Images.Media.IS_PENDING, 1);
+                    imageUri = getContentResolver().insert(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                    if (imageUri == null) throw new IllegalStateException("ساخت فایل در گالری ناموفق بود");
+                    try (OutputStream output = getContentResolver().openOutputStream(imageUri)) {
+                        if (output == null) throw new IllegalStateException("دسترسی نوشتن به گالری برقرار نشد");
+                        output.write(imageBytes);
+                        output.flush();
+                    }
+                    ContentValues ready = new ContentValues();
+                    ready.put(MediaStore.Images.Media.IS_PENDING, 0);
+                    getContentResolver().update(imageUri, ready, null, null);
+                    runOnUiThread(() -> android.widget.Toast.makeText(
+                            MainActivity.this, "تصویر گزارش در گالری ذخیره شد.",
+                            android.widget.Toast.LENGTH_LONG).show());
+                    return true;
+                }
+
+                // Android versions before 10 use the system save-location picker.
+                pendingSaveBytes = imageBytes;
+                runOnUiThread(() -> {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                        intent.addCategory(Intent.CATEGORY_OPENABLE);
+                        intent.setType("image/png");
+                        intent.putExtra(Intent.EXTRA_TITLE, safeName);
+                        startActivityForResult(intent, REQUEST_SAVE_FILE);
+                    } catch (Exception e) {
+                        pendingSaveBytes = null;
+                        android.widget.Toast.makeText(MainActivity.this,
+                                "بازکردن محل ذخیره تصویر ناموفق بود: " + e.getMessage(),
+                                android.widget.Toast.LENGTH_LONG).show();
+                    }
+                });
+                return true;
+            } catch (Exception e) {
+                if (imageUri != null) {
+                    try { getContentResolver().delete(imageUri, null, null); } catch (Exception ignored) {}
+                }
+                runOnUiThread(() -> android.widget.Toast.makeText(
+                        MainActivity.this, "ذخیره تصویر در گالری ناموفق بود: " + e.getMessage(),
+                        android.widget.Toast.LENGTH_LONG).show());
+                return false;
+            }
         }
 
         @JavascriptInterface public void printHtml(String html) {
