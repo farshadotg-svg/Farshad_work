@@ -9,7 +9,6 @@ on:
       - 'app/**'
       - 'build.gradle'
       - 'settings.gradle'
-      - 'scripts/**'
       - '.github/workflows/build-apk.yml'
 permissions:
   contents: write
@@ -24,14 +23,6 @@ jobs:
           test -s index.html || (echo 'Missing or empty index.html: upload the original app HTML to repository root.' && exit 1)
           test -s app/google-services.json || (echo 'Missing app/google-services.json' && exit 1)
           python3 scripts/patch-index-for-android.py
-          python3 scripts/patch-memory-range.py
-          if ! git diff --quiet -- index.html; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add index.html
-            git commit -m "Fix Android sharing and invoice export in original HTML"
-            git push
-          fi
           mkdir -p app/src/main/assets
           cp index.html app/src/main/assets/index.html
       - name: Set up Java
