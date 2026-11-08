@@ -70,7 +70,8 @@ public class MainActivity extends Activity {
                 pendingFileChooser = callback;
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType("application/json");
+                intent.setType("*/*");
+                intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/json", "text/json", "application/octet-stream"});
                 try { startActivityForResult(intent, REQUEST_RESTORE_FILE); }
                 catch (Exception e) { pendingFileChooser = null; callback.onReceiveValue(null); }
                 return true;
@@ -134,9 +135,6 @@ public class MainActivity extends Activity {
             "css.textContent = '#appThemedNotice{position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center;padding:22px;direction:rtl;font-family:inherit}#appThemedNotice .notice-card{width:min(92vw,390px);background:#171b25;color:#f4f5f8;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:22px;box-shadow:0 18px 55px rgba(0,0,0,.48);text-align:center}#appThemedNotice .notice-title{font-size:16px;font-weight:700;margin:0 0 12px;color:#f4f5f8}#appThemedNotice .notice-body{font-size:14px;line-height:1.9;white-space:pre-wrap;color:#d5d9e2;margin-bottom:18px;overflow-wrap:anywhere}#appThemedNotice button{border:0;border-radius:11px;padding:10px 25px;background:var(--accent,#64748b);color:#fff;font:inherit;font-weight:700;min-width:100px}';" +
             "document.head.appendChild(css);" +
             "window.alert = function(message){const old=document.getElementById('appThemedNotice');if(old)old.remove();const overlay=document.createElement('div');overlay.id='appThemedNotice';const card=document.createElement('div');card.className='notice-card';const title=document.createElement('div');title.className='notice-title';title.textContent='پیام برنامه';const body=document.createElement('div');body.className='notice-body';body.textContent=String(message==null?'':message);const btn=document.createElement('button');btn.textContent='متوجه شدم';btn.onclick=()=>overlay.remove();card.append(title,body,btn);overlay.appendChild(card);overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});document.body.appendChild(overlay);};" +
-            "function matchGoogleTab(el){const t=(el.innerText||el.textContent||'').replace(/\\s+/g,' ');return /گوگل|Google/i.test(t)&&/اتصال|حساب|ورود|متصل/i.test(t)}" +
-            "function themeTabs(){document.querySelectorAll('button,[role=tab],.tab,.nav-link').forEach(el=>{if(!matchGoogleTab(el)||el.dataset.themeFixed==='1')return;let peer=el.parentElement&&Array.from(el.parentElement.children).find(x=>x!==el&&(x.matches('button,[role=tab],.tab,.nav-link')||x.querySelector('button,[role=tab],.tab,.nav-link')));if(peer&&!peer.matches('button,[role=tab],.tab,.nav-link'))peer=peer.querySelector('button,[role=tab],.tab,.nav-link');if(peer){const s=getComputedStyle(peer);el.style.setProperty('background',s.backgroundColor,'important');el.style.setProperty('background-color',s.backgroundColor,'important');el.style.setProperty('color',s.color,'important');el.style.setProperty('border-color',s.borderColor,'important');el.style.setProperty('box-shadow',s.boxShadow,'important');}else{el.style.setProperty('background','#252b38','important');el.style.setProperty('background-color','#252b38','important');el.style.setProperty('color','#e7eaf0','important');el.style.setProperty('border-color','rgba(255,255,255,.12)','important');}el.dataset.themeFixed='1';});}" +
-            "themeTabs();new MutationObserver(themeTabs).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});" +
             "})();";
         webView.evaluateJavascript(script, null);
     }
@@ -252,22 +250,17 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void shareImageBase64(String encoded, String filename) {
             runOnUiThread(() -> {
                 try {
-                    byte[] bytes = Base64.decode(encoded, Base64.DEFAULT);
-                    File dir = new File(getCacheDir(), "shared-images");
-                    if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("ساخت پوشه تصویر ناموفق بود");
-                    String safeName = (filename == null ? "factor.png" : filename).replaceAll("[^A-Za-z0-9._-]", "_");
-                    if (!safeName.endsWith(".png")) safeName = "factor.png";
-                    File file = new File(dir, safeName);
-                    try (FileOutputStream out = new FileOutputStream(file)) { out.write(bytes); }
-                    Uri uri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", file);
-                    Intent intent = new Intent(Intent.ACTION_SEND);
+                    pendingSaveBytes = Base64.decode(encoded, Base64.DEFAULT);
+                    String safeName = (filename == null || filename.trim().isEmpty() ? "gozaresh.png" : filename).replaceAll("[^A-Za-z0-9._-]", "_");
+                    if (!safeName.toLowerCase().endsWith(".png")) safeName += ".png";
+                    Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
                     intent.setType("image/png");
-                    intent.putExtra(Intent.EXTRA_STREAM, uri);
-                    intent.setClipData(ClipData.newUri(getContentResolver(), "فاکتور", uri));
-                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    startActivity(Intent.createChooser(intent, "اشتراک‌گذاری تصویر فاکتور"));
+                    intent.putExtra(Intent.EXTRA_TITLE, safeName);
+                    startActivityForResult(intent, REQUEST_SAVE_FILE);
                 } catch (Exception e) {
-                    android.widget.Toast.makeText(MainActivity.this, "اشتراک‌گذاری تصویر ناموفق بود: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+                    pendingSaveBytes = null;
+                    android.widget.Toast.makeText(MainActivity.this, "ذخیره تصویر ناموفق بود: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
                 }
             });
         }
