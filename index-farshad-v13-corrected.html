@@ -384,21 +384,39 @@ async function deleteService(id){if(!await appConfirm('این سرویس حذف 
 async function togglePaid(id){const item=records.find(r=>String(r.id)===String(id));if(!item)return;if(item.paid){if(!await appConfirm('آیا به اشتباه «پرداخت شد» را زده‌اید؟'))return;records=records.map(r=>String(r.id)===String(id)?{...r,paid:false,updatedAt:Date.now()}:r)}else{if(!await appConfirm('آیا این سرویس پرداخت شده است؟'))return;records=records.map(r=>String(r.id)===String(id)?{...r,paid:true,updatedAt:Date.now()}:r)}persist()}
 async function deleteDay(day){if(!await appConfirm('تمام سرویس‌های این روز حذف شوند؟ این کار قابل بازگشت نیست.'))return;records=records.filter(r=>r.date!==day);expanded.delete(day);persist()}
 function dayText(day){let list=dayRecords(day),d=new Date(day+'T12:00:00'),fmt=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{day:'numeric',month:'numeric'}),parts=fmt.formatToParts(d),dayNum=parts.find(p=>p.type==='day').value,month=parts.find(p=>p.type==='month').value;let lines=[`${dayNum} برج ${month}`];list.slice().reverse().forEach(r=>{lines.push(`${r.count} سرویس ${r.customer} از ${r.source} ${enNum(r.count*r.price)}${r.paid?'✅️':''}`);if(r.description)lines.push(`توضیحات: ${r.description}`)});lines.push('',`👍${enNum(Math.floor(total(list)/3))}`);return lines.join('\n')}
-function exportDay(day){const text=dayText(day);if(window.AndroidBridge&&typeof window.AndroidBridge.copyText==='function'){window.AndroidBridge.copyText(text);alert('گزارش کامل روز در کلیپ‌بورد کپی شد.');return}if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(()=>alert('گزارش کامل روز کپی شد.')).catch(()=>downloadText(`hesab-${day}.txt`,text));return}downloadText(`hesab-${day}.txt`,text)}
+async function copyReportText(text,successMessage){
+ try{
+  if(window.AndroidBridge&&typeof window.AndroidBridge.copyText==='function'){
+   const txt=String(text);window.AndroidBridge.copyText(txt);alert(successMessage);return true;
+  }
+  if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(String(text));alert(successMessage);return true;}
+  const area=document.createElement('textarea');area.value=String(text);area.setAttribute('readonly','');
+  area.style.position='fixed';area.style.opacity='0';area.style.pointerEvents='none';document.body.appendChild(area);
+  area.select();area.setSelectionRange(0,area.value.length);const ok=document.execCommand('copy');area.remove();
+  if(ok){alert(successMessage);return true;}
+ }catch(e){console.warn('Clipboard copy failed:',e)}
+ alert('کپی مستقیم در این محیط در دسترس نیست. لطفاً اجازهٔ کلیپ‌بورد مرورگر را فعال کنید.');return false;
+}
+async function exportDay(day){return copyReportText(dayText(day),'گزارش کامل روز در کلیپ‌بورد کپی شد.')}
 async function exportAllText(){
  const txt=dayKeys().slice().reverse().map(dayText).join('\n\n--------------------\n\n');
  if(!txt.trim()){alert('هنوز گزارشی برای کپی‌کردن وجود ندارد.');return}
- try{
-  if(window.AndroidBridge&&typeof window.AndroidBridge.copyText==='function'){
-   window.AndroidBridge.copyText(txt);alert('گزارش متنی همه روزها در کلیپ‌بورد کپی شد.');return;
-  }
-  if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(txt);alert('گزارش متنی همه روزها در کلیپ‌بورد کپی شد.');return;}
- }catch(e){console.warn('Clipboard copy failed:',e)}
- downloadText('hesab-kol-roozha.txt',txt);
- alert('دسترسی مستقیم به کلیپ‌بورد ممکن نبود؛ فایل متنی گزارش دانلود شد.');
+ await copyReportText(txt,'گزارش متنی همه روزها در کلیپ‌بورد کپی شد.');
 }
 function downloadText(name,text){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
 async function shareDay(day){const text=dayText(day);if(window.AndroidBridge&&typeof window.AndroidBridge.shareText==='function'){window.AndroidBridge.shareText('حساب سرویس‌های آب',text);return}if(navigator.share){try{await navigator.share({title:'حساب سرویس‌های آب',text})}catch(e){if(e.name!=='AbortError')alert('اشتراک‌گذاری متن انجام نشد.')}}else{try{await navigator.clipboard.writeText(text);alert('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود؛ متن کپی شد.')}catch{downloadText(`hesab-${day}.txt`,text)}}}
+async function saveImageToGallery(blob,name){
+ if(window.AndroidBridge&&typeof window.AndroidBridge.saveImageToGalleryBase64==='function'){
+  const bytes=new Uint8Array(await blob.arrayBuffer());let binary='';
+  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));
+  window.AndroidBridge.saveImageToGalleryBase64(btoa(binary),name);
+  alert('تصویر در گالری گوشی ذخیره شد.');return true;
+ }
+ // Fallback for a plain browser: download, since a web page cannot silently write to Android Gallery.
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),1800);
+ alert('ذخیره مستقیم در گالری در این نسخه فعال نیست؛ تصویر در دانلودها ذخیره شد.');return false;
+}
 async function shareDayImage(day){
  let list=dayRecords(day),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),W=1000,rowH=86,headerH=270,footerH=200;
  if(!ctx){alert('ساخت تصویر در این مرورگر پشتیبانی نمی‌شود.');return}
@@ -413,12 +431,9 @@ async function shareDayImage(day){
  if(r.description){ctx.fillStyle='#5c6e82';ctx.font='15px Tahoma';ctx.fillText(r.description,945,y+58)}y+=rowH});
  y+=20;ctx.fillStyle='#102947';ctx.fillRect(25,y,W-50,footerH-20);ctx.fillStyle='#fff';ctx.font='bold 25px Tahoma';ctx.fillText('درآمد کل: '+enNum(total(list))+' تومان',945,y+55);ctx.fillStyle='#ffc342';ctx.fillText('سهم فرشاد: '+enNum(Math.floor(total(list)/3))+' تومان',945,y+105);
  const blob=await new Promise(resolve=>{try{canvas.toBlob(resolve,'image/png')}catch(e){resolve(null)}});if(!blob){alert('ساخت تصویر ممکن نشد. لطفاً صفحه را در مرورگر Chrome باز کنید و دوباره تلاش کنید.');return}
- if(window.AndroidBridge&&typeof window.AndroidBridge.shareImageBase64==='function'){try{const bytes=new Uint8Array(await blob.arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));window.AndroidBridge.shareImageBase64(btoa(binary),`factor-${toJalali(day).replaceAll('/','-')}.png`);return}catch(e){alert('آماده‌سازی تصویر برای اشتراک‌گذاری ناموفق بود: '+e.message);return}}
- const file=typeof File==='function'?new File([blob],`factor-${day}.png`,{type:'image/png'}):null;
- if(file&&navigator.share&&navigator.canShare){try{if(navigator.canShare({files:[file]})){await navigator.share({title:'فاکتور حساب روز '+toJalali(day),files:[file]});return}}catch(e){if(e.name==='AbortError')return}}
- if(navigator.share){try{await navigator.share({title:'فاکتور حساب روز '+toJalali(day),text:'تصویر فاکتور حساب روز '+toJalali(day)})}catch(e){if(e.name==='AbortError')return}}
- const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`factor-${toJalali(day).replaceAll('/','-')}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);alert('تصویر فاکتور ذخیره شد؛ می‌توانید آن را از گالری به اشتراک بگذارید.');
+ await saveImageToGallery(blob,`factor-${toJalali(day).replaceAll('/','-')}.png`);
 }
+
 function printDay(day){let list=dayRecords(day),html2=`<!doctype html><html lang="fa" dir="rtl"><meta charset="utf-8"><title>فاکتور ${day}</title><style>body{font-family:Tahoma,sans-serif;padding:24px;color:#111}h1{color:#12345a}table{width:100%;border-collapse:collapse;margin-top:20px}td,th{border:1px solid #aaa;padding:9px;text-align:right}.sum{margin-top:18px;font-size:18px;font-weight:bold}.muted{color:#666}@media print{button{display:none}}
 /* Layout adjustment: move Google/theme controls to the left and tighten copyright spacing */
 .hero-controls{display:flex!important;justify-content:flex-start!important;width:100%!important;margin-left:auto!important;margin-right:0!important}
@@ -453,8 +468,8 @@ async function saveReportImageToGallery(blob,name){
  if(window.AndroidBridge&&typeof window.AndroidBridge.saveImageToGalleryBase64==='function'){
   const bytes=new Uint8Array(await blob.arrayBuffer());let binary='';
   for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));
-  const saved=window.AndroidBridge.saveImageToGalleryBase64(btoa(binary),name);
-  if(saved!==false){alert('تصویر گزارش در گالری گوشی ذخیره شد.');return true;}
+  window.AndroidBridge.saveImageToGalleryBase64(btoa(binary),name);
+  alert('تصویر گزارش در گالری گوشی ذخیره شد.');return true;
  }
  return false;
 }
@@ -487,7 +502,7 @@ function selectedMemoryRange(){
 function memoryRangeLabel(start,end){return String(start||'').trim()+' تا '+String(end||'').trim()}
 function memoryRangeRecords(days){return days.flatMap(day=>dayRecords(day).map(r=>Object.assign({_day:day},r)))}
 function memoryRangeText(days){return days.length?days.map(dayText).join('\n\n--------------------\n\n'):'در بازه انتخاب‌شده سرویسی ثبت نشده است.'}
-function exportMemoryRange(){const days=selectedMemoryRange();if(!days)return;const txt=memoryRangeText(days);if(window.AndroidBridge&&typeof window.AndroidBridge.copyText==='function'){window.AndroidBridge.copyText(txt);alert('متن کل بازه در کلیپ‌بورد کپی شد.');return}downloadText('hesab-bazeh-'+$('memoryStart').value.replace(/[\/\.]/g,'-')+'-'+$('memoryEnd').value.replace(/[\/\.]/g,'-')+'.txt',txt)}
+async function exportMemoryRange(){const days=selectedMemoryRange();if(!days)return;const txt=memoryRangeText(days);await copyReportText(txt,'متن کل بازه در کلیپ‌بورد کپی شد.')}
 async function shareMemoryRange(){
  const days=selectedMemoryRange();if(!days)return;const txt=memoryRangeText(days),title='گزارش حساب بازه '+memoryRangeLabel($('memoryStart').value,$('memoryEnd').value);
  if(window.AndroidBridge&&typeof window.AndroidBridge.shareText==='function'){window.AndroidBridge.shareText(title,txt);return}
@@ -510,10 +525,9 @@ async function shareMemoryRangeImage(){
  rows.forEach((r,i)=>{ctx.fillStyle=i%2?'#fff':'#edf3f9';ctx.fillRect(20,y,W-40,rowH);ctx.fillStyle='#17283d';ctx.font='16px Tahoma';[[r.paid?'✓ پرداخت شده':'✕ پرداخت نشده',W-1050],[r.source,W-850],[enNum(r.count*r.price),W-610],[faNum(r.count),W-390],[r.customer,W-230],[toJalali(r._day),W-65]].forEach(([t,x])=>ctx.fillText(String(t),x,y+30));if(r.description){ctx.fillStyle='#5c6e82';ctx.font='13px Tahoma';ctx.fillText(r.description,W-65,y+55)}y+=rowH});
  y+=10;const sum=rows.reduce((a,r)=>a+r.count*r.price,0);ctx.fillStyle='#102947';ctx.fillRect(20,y,W-40,footerH-10);ctx.fillStyle='#fff';ctx.font='bold 22px Tahoma';ctx.fillText('درآمد کل: '+enNum(sum)+' تومان',W-35,y+48);ctx.fillStyle='#ffc342';ctx.fillText('سهم فرشاد: '+enNum(Math.floor(sum/3))+' تومان',W-35,y+95);
  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob){alert('ساخت تصویر ممکن نشد.');return}
- if(window.AndroidBridge&&typeof window.AndroidBridge.shareImageBase64==='function'){const bytes=new Uint8Array(await blob.arrayBuffer());let bin='';for(let i=0;i<bytes.length;i+=0x8000)bin+=String.fromCharCode(...bytes.subarray(i,i+0x8000));window.AndroidBridge.shareImageBase64(btoa(bin),'factor-range.png');return}
- const file=typeof File==='function'?new File([blob],'factor-range.png',{type:'image/png'}):null;if(file&&navigator.share&&navigator.canShare){try{if(navigator.canShare({files:[file]})){await navigator.share({title:'فاکتور بازه تاریخی',files:[file]});return}}catch(e){if(e.name==='AbortError')return}}
- const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='factor-range.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);alert('تصویر فاکتور بازه ذخیره شد.');
+ await saveImageToGallery(blob,'factor-range.png');
 }
+
 function memoryRangeSummaryData(){
  const days=selectedMemoryRange();if(!days)return null;
  const rows=memoryRangeRecords(days);
@@ -541,13 +555,10 @@ async function createMemoryRangeSummaryBlob(){
  for(const [label,value,color] of lines){ctx.textAlign='right';ctx.fillStyle='#64748b';ctx.font='bold 27px Tahoma';ctx.fillText(label,900,y);ctx.textAlign='left';ctx.fillStyle=color;ctx.font='bold 31px Tahoma';ctx.fillText(value,85,y);y+=105}
  return await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
 }
-async function saveMemoryRangeSummaryImage(){const blob=await createMemoryRangeSummaryBlob();if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='joziyat-koli-bazeh.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+async function saveMemoryRangeSummaryImage(){const blob=await createMemoryRangeSummaryBlob();if(!blob)return;await saveImageToGallery(blob,'joziyat-koli-bazeh.png')}
 async function shareMemoryRangeSummaryImage(){
- const blob=await createMemoryRangeSummaryBlob();if(!blob)return;const name='joziyat-koli-bazeh.png';
- if(window.AndroidBridge&&typeof window.AndroidBridge.shareImageBase64==='function'){try{const bytes=new Uint8Array(await blob.arrayBuffer());let bin='';for(let i=0;i<bytes.length;i+=0x8000)bin+=String.fromCharCode(...bytes.subarray(i,i+0x8000));window.AndroidBridge.shareImageBase64(btoa(bin),name);return}catch(e){alert('اشتراک تصویر انجام نشد: '+e.message);return}}
- const file=typeof File==='function'?new File([blob],name,{type:'image/png'}):null;
- if(file&&navigator.share&&navigator.canShare){try{if(navigator.canShare({files:[file]})){await navigator.share({title:'جزئیات کلی بازه',files:[file]});return}}catch(e){if(e.name==='AbortError')return}}
- const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);alert('اشتراک مستقیم در دسترس نبود؛ تصویر ذخیره شد.');
+ const blob=await createMemoryRangeSummaryBlob();if(!blob)return;
+ await saveImageToGallery(blob,'joziyat-koli-bazeh.png');
 }
 
 function showServiceDetails(id){const r=records.find(x=>String(x.id)===String(id));if(!r)return;const amount=Number(r.count)*Number(r.price);const items=[['نام مشتری',r.customer||'—',''],['تعداد سرویس',faNum(r.count),''],['تاریخ',toJalali(r.date),''],['محل آب‌گیری',r.source||'—',''],['شماره تلفن',r.phone||lookupCustomerPhone(r.customer)||'ثبت نشده','phone-item'],['وضعیت پرداخت',r.paid?'✓ پرداخت شده':'✕ پرداخت نشده',r.paid?'status-paid':'status-unpaid'],...(r.description?[['یادداشت',r.description,'note-item']]:[]),['مبلغ کل',enNum(amount)+' تومان','money-highlight'],['سهم فرشاد',enNum(Math.floor(amount/3))+' تومان','money-highlight share-highlight']];$('serviceDetailsContent').innerHTML=items.map(([k,v,cls])=>{const phoneRow=cls==='phone-item'&&v!=='ثبت نشده';const val=phoneRow?`<a href="tel:${esc(phoneDigits(v))}" style="color:inherit;text-decoration:underline;text-underline-offset:3px;direction:ltr;unicode-bidi:plaintext">${esc(String(v))}</a>`:esc(String(v));return `<div class="details-item ${cls}"><small>${esc(k)}</small><strong>${val}</strong></div>`}).join('');$('serviceDetailsOverlay').classList.add('show')}
