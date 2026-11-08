@@ -17,6 +17,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.ValueCallback;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
@@ -36,10 +37,16 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
     private WebView webView;
     private CredentialManager credentialManager;
+    private ValueCallback<Uri[]> pendingFileChooser;
+    private static final int REQUEST_RESTORE_FILE = 4101;
+    private static final int REQUEST_SAVE_FILE = 4102;
+    private byte[] pendingSaveBytes;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -57,7 +64,18 @@ public class MainActivity extends Activity {
 
         webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
         webView.addJavascriptInterface(new GoogleAuthBridge(), "AndroidGoogleAuth");
-        webView.setWebChromeClient(new WebChromeClient());
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
+                if (pendingFileChooser != null) pendingFileChooser.onReceiveValue(null);
+                pendingFileChooser = callback;
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType("application/json");
+                try { startActivityForResult(intent, REQUEST_RESTORE_FILE); }
+                catch (Exception e) { pendingFileChooser = null; callback.onReceiveValue(null); }
+                return true;
+            }
+        });
         webView.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
@@ -113,6 +131,30 @@ public class MainActivity extends Activity {
         webView.evaluateJavascript(script, null);
     }
 
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_RESTORE_FILE) {
+            if (pendingFileChooser != null) {
+                Uri[] result = resultCode == RESULT_OK && data != null && data.getData() != null ? new Uri[]{data.getData()} : null;
+                pendingFileChooser.onReceiveValue(result);
+                pendingFileChooser = null;
+            }
+            return;
+        }
+        if (requestCode == REQUEST_SAVE_FILE) {
+            if (resultCode == RESULT_OK && data != null && data.getData() != null && pendingSaveBytes != null) {
+                try (OutputStream out = getContentResolver().openOutputStream(data.getData())) {
+                    if (out == null) throw new IllegalStateException("امکان ذخیره فایل وجود ندارد");
+                    out.write(pendingSaveBytes);
+                    android.widget.Toast.makeText(this, "فایل با موفقیت ذخیره شد.", android.widget.Toast.LENGTH_LONG).show();
+                } catch (Exception e) {
+                    android.widget.Toast.makeText(this, "ذخیره فایل ناموفق بود: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+                }
+            }
+            pendingSaveBytes = null;
+        }
+    }
+
     private class GoogleAuthBridge {
         @JavascriptInterface public void signIn() {
             runOnUiThread(MainActivity.this::beginGoogleSignIn);
@@ -163,6 +205,23 @@ public class MainActivity extends Activity {
     }
 
     private class AndroidBridge {
+        @JavascriptInterface public void saveTextFile(String filename, String content, String mimeType) {
+            runOnUiThread(() -> {
+                try {
+                    String safeName = (filename == null || filename.trim().isEmpty()) ? "backup.json" : filename.replaceAll("[^A-Za-z0-9._-]", "_");
+                    pendingSaveBytes = (content == null ? "" : content).getBytes(StandardCharsets.UTF_8);
+                    Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType(mimeType == null || mimeType.isEmpty() ? "application/octet-stream" : mimeType);
+                    intent.putExtra(Intent.EXTRA_TITLE, safeName);
+                    startActivityForResult(intent, REQUEST_SAVE_FILE);
+                } catch (Exception e) {
+                    pendingSaveBytes = null;
+                    android.widget.Toast.makeText(MainActivity.this, "بازکردن محل ذخیره فایل ناموفق بود: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
         @JavascriptInterface public void copyText(String text) {
             runOnUiThread(() -> {
                 ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
