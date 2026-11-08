@@ -10,7 +10,7 @@ if green_tab in html:
     html = html.replace(green_tab, plain_tab, 1)
 
 # Remove a literal escaped newline that WebView displays as stray text.
-escaped_style_prefix = r"\n<style id=\"persian-dialog-style\">"
+escaped_style_prefix = r'\n<style id="persian-dialog-style">'
 if escaped_style_prefix in html:
     html = html.replace(escaped_style_prefix, '<style id="persian-dialog-style">', 1)
 if escaped_style_prefix in html:
