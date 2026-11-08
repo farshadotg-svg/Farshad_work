@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Midnight-blue tile and metallic-gold frame -->
+    <path android:fillColor="#07172F" android:pathData="M18,2 L90,2 Q106,2 106,18 L106,90 Q106,106 90,106 L18,106 Q2,106 2,90 L2,18 Q2,2 18,2 Z"/>
+    <path android:fillColor="#D6A83F" android:pathData="M18,5 L90,5 Q103,5 103,18 L103,90 Q103,103 90,103 L18,103 Q5,103 5,90 L5,18 Q5,5 18,5 Z"/>
+    <path android:fillColor="#0A2142" android:pathData="M19,8 L89,8 Q100,8 100,19 L100,89 Q100,100 89,100 L19,100 Q8,100 8,89 L8,19 Q8,8 19,8 Z"/>
+    <!-- Water drop -->
+    <path android:fillColor="#16A9F5" android:pathData="M76,13 C70,23 63,30 63,39 C63,48 69,54 77,54 C85,54 91,48 91,39 C91,30 83,21 76,13 Z"/>
+    <path android:fillColor="#BDEBFF" android:pathData="M75,23 C71,30 68,34 68,40 C68,44 70,47 73,49 C70,43 72,37 75,23 Z"/>
+    <!-- Ledger board -->
+    <path android:fillColor="#E9F2FA" android:pathData="M69,53 L93,53 Q96,53 96,57 L96,81 Q96,84 93,84 L69,84 Q66,84 66,81 L66,57 Q66,53 69,53 Z"/>
+    <path android:fillColor="#D5A43A" android:pathData="M69,53 L93,53 Q96,53 96,57 L96,60 L66,60 L66,57 Q66,53 69,53 Z"/>
+    <path android:fillColor="#168FE0" android:pathData="M71,65 L74,68 L80,62 L82,64 L74,72 L69,67 Z"/>
+    <path android:fillColor="#168FE0" android:pathData="M71,75 L74,78 L80,72 L82,74 L74,82 L69,77 Z"/>
+    <path android:fillColor="#8EA7BE" android:pathData="M84,65 L92,65 L92,67 L84,67 Z M84,75 L92,75 L92,77 L84,77 Z"/>
+    <!-- Tank body -->
+    <path android:fillColor="#F5F8FC" android:pathData="M13,43 Q13,37 20,37 L56,37 Q63,37 63,44 L63,65 L13,65 Z"/>
+    <path android:fillColor="#D7E3EF" android:pathData="M16,42 Q16,40 20,40 L56,40 Q60,40 60,44 L60,61 L16,61 Z"/>
+    <path android:fillColor="#168FE0" android:pathData="M17,53 Q29,47 40,53 Q50,58 60,52 L60,59 Q49,65 38,59 Q27,54 17,60 Z"/>
+    <path android:fillColor="#0C6FB8" android:pathData="M17,59 Q28,53 39,59 Q50,65 60,58 L60,62 L17,62 Z"/>
+    <!-- Cabin -->
+    <path android:fillColor="#F8FBFF" android:pathData="M9,51 L18,45 L29,45 L33,52 L33,70 L9,70 Z"/>
+    <path android:fillColor="#163A60" android:pathData="M13,52 L19,48 L25,48 L28,54 L13,54 Z"/>
+    <path android:fillColor="#55C7FF" android:pathData="M14,52 L19,49 L24,49 L26,52 Z"/>
+    <path android:fillColor="#D6A83F" android:pathData="M9,66 L33,66 L33,70 L9,70 Z"/>
+    <path android:fillColor="#E9F2FA" android:pathData="M33,62 L63,62 L63,68 L33,68 Z"/>
+    <!-- Wheels -->
+    <path android:fillColor="#07101D" android:pathData="M17,65 A7,7 0,1 0,31 65 A7,7 0,1 0,17 65 Z M47,65 A7,7 0,1 0,61 65 A7,7 0,1 0,47 65 Z"/>
+    <path android:fillColor="#AFC4D8" android:pathData="M20,65 A4,4 0,1 0,28 65 A4,4 0,1 0,20 65 Z M50,65 A4,4 0,1 0,58 65 A4,4 0,1 0,50 65 Z"/>
+    <path android:fillColor="#D6A83F" android:pathData="M22,64 L26,64 L26,66 L22,66 Z M52,64 L56,64 L56,66 L52,66 Z"/>
+    <!-- Calculator and water-wave base -->
+    <path android:fillColor="#102E50" android:pathData="M68,87 L93,87 L93,94 L68,94 Z"/>
+    <path android:fillColor="#D6A83F" android:pathData="M13,88 Q28,82 42,88 Q56,94 69,87 L69,91 Q55,98 41,92 Q27,86 13,92 Z"/>
+    <path android:fillColor="#168FE0" android:pathData="M13,94 Q28,88 42,94 Q56,100 69,93 L69,97 Q55,103 41,98 Q27,92 13,98 Z"/>
+</vector>
