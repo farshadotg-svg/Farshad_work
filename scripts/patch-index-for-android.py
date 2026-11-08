@@ -2,6 +2,12 @@ from pathlib import Path
 
 path = Path("index.html")
 html = path.read_text(encoding="utf-8")
+green_tab = '<button class="tab" data-page="cloud" style="background:linear-gradient(135deg,#145d43,#073d2b);border-color:#28dc79;font-weight:bold">☁️ اتصال گوگل</button>'
+plain_tab = '<button class="tab" data-page="cloud">☁️ اتصال گوگل</button>'
+if green_tab in html:
+    html = html.replace(green_tab, plain_tab, 1)
+elif plain_tab not in html:
+    raise SystemExit("Google tab markup was not found; refusing to build an unverified UI.")
 bt = chr(96)
 day_template = bt + "hesab-" + "$" + "{day}.txt" + bt
 factor_template = bt + "factor-" + "$" + "{toJalali(day).replaceAll('/','-')}.png" + bt
