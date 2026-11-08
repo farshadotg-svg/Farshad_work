@@ -9,6 +9,13 @@ plain_tab = '<button class="tab" data-page="cloud">☁️ اتصال گوگل</b
 if green_tab in html:
     html = html.replace(green_tab, plain_tab, 1)
 
+# Remove a literal escaped newline that WebView displays as stray text.
+escaped_style_prefix = r"\n<style id=\"persian-dialog-style\">"
+if escaped_style_prefix in html:
+    html = html.replace(escaped_style_prefix, '<style id="persian-dialog-style">', 1)
+if escaped_style_prefix in html:
+    raise SystemExit("Visible escaped newline remains before Persian dialog styles.")
+
 # The report text action copies the complete report directly to Android clipboard.
 # The backup action still uses Android's document picker to create a JSON backup.
 old_backup = "function backupData(){downloadText('backup-hesab-ab.json',JSON.stringify({version:2,records,customers:JSON.parse(localStorage.getItem('waterServiceCustomers_v1')||'[]'),customerPhones:customerPhones},null,2))}"
