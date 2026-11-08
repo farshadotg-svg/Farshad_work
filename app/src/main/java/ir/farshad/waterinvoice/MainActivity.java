@@ -65,6 +65,44 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
         webView.addJavascriptInterface(new GoogleAuthBridge(), "AndroidGoogleAuth");
         webView.setWebChromeClient(new WebChromeClient() {
+            @Override public boolean onJsConfirm(WebView view, String url, String message, android.webkit.JsResult result) {
+                android.widget.TextView title = new android.widget.TextView(MainActivity.this);
+                title.setText("همگام‌سازی اطلاعات");
+                title.setTextColor(android.graphics.Color.WHITE);
+                title.setTextSize(18);
+                title.setTypeface(null, android.graphics.Typeface.BOLD);
+                title.setGravity(android.view.Gravity.RIGHT);
+                title.setPadding(26, 24, 26, 8);
+
+                android.widget.TextView body = new android.widget.TextView(MainActivity.this);
+                body.setText(message == null ? "" : message);
+                body.setTextColor(android.graphics.Color.rgb(220, 224, 233));
+                body.setTextSize(15);
+                body.setGravity(android.view.Gravity.RIGHT);
+                body.setTextDirection(android.view.View.TEXT_DIRECTION_RTL);
+                body.setLineSpacing(5, 1.0f);
+                body.setPadding(26, 12, 26, 22);
+
+                final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(MainActivity.this, android.R.style.Theme_Material_Dialog_Alert)
+                        .setCustomTitle(title)
+                        .setView(body)
+                        .setPositiveButton("بازیابی از ابر", (d, which) -> result.confirm())
+                        .setNegativeButton("نگه‌داشتن اطلاعات گوشی", (d, which) -> result.cancel())
+                        .setOnCancelListener(d -> result.cancel())
+                        .create();
+                dialog.setOnShowListener(d -> {
+                    android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+                    bg.setColor(android.graphics.Color.rgb(23, 27, 37));
+                    bg.setCornerRadius(24 * getResources().getDisplayMetrics().density);
+                    bg.setStroke((int)(1 * getResources().getDisplayMetrics().density), android.graphics.Color.rgb(65, 72, 88));
+                    if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(bg);
+                    dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setTextColor(android.graphics.Color.rgb(132, 190, 255));
+                    dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.rgb(205, 211, 222));
+                });
+                dialog.show();
+                return true;
+            }
+
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (pendingFileChooser != null) pendingFileChooser.onReceiveValue(null);
                 pendingFileChooser = callback;
