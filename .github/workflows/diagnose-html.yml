@@ -1,6 +1,11 @@
 name: Diagnose uploaded HTML
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/diagnose-html.py'
+      - '.github/workflows/diagnose-html.yml'
 permissions:
   contents: read
 jobs:
