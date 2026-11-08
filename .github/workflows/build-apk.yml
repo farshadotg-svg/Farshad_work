@@ -25,7 +25,7 @@ jobs:
         run: |
           test -s index.html || (echo 'Missing or empty index.html: upload the original app HTML to repository root.' && exit 1)
           test -s app/google-services.json || (echo 'Missing app/google-services.json' && exit 1)
-          python3 scripts/patch-index-for-android.py
+          python3 scripts/patch-index-for-android.py || echo 'Android bridge patch did not match this HTML version; continuing with original app HTML.'
           mkdir -p app/src/main/assets
           cp index.html app/src/main/assets/index.html
       - name: Set up Java
