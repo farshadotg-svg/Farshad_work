@@ -1,0 +1,28 @@
+name: Diagnose uploaded HTML
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Inspect v13 HTML without modifying it
+        run: python3 scripts/diagnose-html.py
+      - name: Upload diagnostic report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-v13-diagnostic-report
+          path: html-diagnostic-report.json
+          if-no-files-found: warn
