@@ -28,9 +28,9 @@ jobs:
           test -s index.html || (echo 'Missing or empty app HTML.' && exit 1)
           test -s app/google-services.json || (echo 'Missing app/google-services.json' && exit 1)
           python3 scripts/patch-index-for-android.py
-          grep -Fq "window.AndroidBridge.saveTextFile('hesab-kol-roozha.txt'" index.html
+          grep -Fq "window.AndroidBridge.copyText(txt)" index.html
           grep -Fq "window.AndroidBridge.saveTextFile('backup-hesab-ab.json'" index.html
-          grep -Fq "window.AndroidBridge.shareImageBase64(btoa(binary),'gozaresh-daramad-'" index.html
+          grep -Fq "window.AndroidBridge.saveImageToGalleryBase64(btoa(binary),name)" index.html
           mkdir -p app/src/main/assets
           cp index.html app/src/main/assets/index.html
       - name: Set up Java
