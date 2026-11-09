@@ -84,7 +84,7 @@ class BrowserActivity : Activity() {
             setOnClickListener {
                 if (!assistantRunning) {
                     stopped = false
-                    visibility = View.GONE
+                    resumeButton.visibility = View.GONE
                     assistantRunning = true
                     report.text = "صفحه دوباره بررسی می‌شود…"
                     observePage()
