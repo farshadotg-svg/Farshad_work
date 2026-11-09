@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090e1b"><title>همراه‌یار</title>
+<style>
+:root{color-scheme:dark;--bg:#090e1b;--panel:#111a2d;--line:#263451;--muted:#9aa9c5;--accent:#8292ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% 0,#1a2850 0,transparent 38%),var(--bg);color:#f4f6ff;font-family:Tahoma,"Segoe UI",sans-serif;min-height:100vh;padding:22px}
+main{max-width:760px;margin:auto}.top{display:flex;align-items:center;gap:14px;margin:22px 0 28px}.logo{width:54px;height:54px;border-radius:17px;background:linear-gradient(135deg,#8194ff,#5364c8);display:grid;place-items:center;font-size:27px;box-shadow:0 10px 35px #5668d744}.muted{color:var(--muted)}h1{font-size:22px;margin:0 0 6px}.card{background:linear-gradient(145deg,#151f36,#10182a);border:1px solid var(--line);border-radius:22px;padding:20px;margin:14px 0;box-shadow:0 18px 55px #0003}.card h2{font-size:17px;margin:0 0 14px}.status{display:inline-flex;gap:8px;align-items:center;color:#a9e6c3;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:#5bd39a;box-shadow:0 0 12px #5bd39a}.field{display:block;width:100%;background:#0b1324;border:1px solid #31415f;border-radius:13px;padding:15px;color:white;font:inherit;direction:ltr;text-align:left;outline:none}.field:focus{border-color:var(--accent)}button{border:0;border-radius:13px;padding:14px 18px;font:inherit;font-weight:bold;background:linear-gradient(120deg,#8292ff,#6476e7);color:white;cursor:pointer;width:100%;margin-top:12px}.hint{font-size:12px;line-height:1.9;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.tile{padding:14px;border:1px solid var(--line);border-radius:15px;background:#0d1629}.tile b{display:block;margin-bottom:7px;font-size:13px}.tile span{font-size:11px;color:var(--muted)}#msg{font-size:13px;color:#a9e6c3;margin-top:12px;min-height:20px}
+@media(max-width:480px){body{padding:15px}.card{padding:16px}.grid{grid-template-columns:1fr 1fr}}
+</style></head>
+<body><main>
+<header class="top"><div class="logo">✦</div><div><h1>همراه‌یار</h1><div class="muted" style="font-size:12px">دستیار هوشمند فرم‌های اینترنتی</div></div></header>
+<section class="card"><div class="status"><i class="dot"></i> رابط اندروید آماده</div><h2 style="margin-top:15px">شروع یک فرایند جدید</h2><p class="hint">آدرس سایت را وارد کن تا در مرورگر داخلی همراه‌یار باز شود. پس از بارگذاری، برنامه ساختار اولیه فرم‌ها را بررسی می‌کند.</p>
+<input id="url" class="field" type="url" placeholder="https://example.com/login" value="https://kavirtire.ir/esale/login">
+<button onclick="openSite()">بازکردن سایت و تحلیل فرم</button><div id="msg"></div></section>
+<section class="card"><h2>امکانات همراه‌یار</h2><div class="grid">
+<div class="tile"><b>⌕ شناسایی فرم</b><span>تشخیص ورودی‌ها و دکمه‌ها</span></div>
+<div class="tile"><b>▣ مرورگر داخلی</b><span>بازکردن سایت‌های HTTPS</span></div>
+<div class="tile"><b>◈ پروفایل اطلاعات</b><span>آماده توسعه و اتصال</span></div>
+<div class="tile"><b>◷ گزارش فعالیت</b><span>بدون ثبت رمز و کد یک‌بارمصرف</span></div>
+</div></section>
+<section class="card"><h2>امنیت و کنترل کاربر</h2><p class="hint">همراه‌یار کپچا، صف انتظار یا سازوکارهای امنیتی سایت را دور نمی‌زند. رمزها، کدهای پیامکی و تأیید هویت باید توسط خود کاربر وارد شوند. ارسال نهایی فرم نیز فقط با تأیید کاربر انجام می‌شود.</p></section>
+<p class="hint" style="text-align:center">نسخه آزمایشی ۰.۱.۰ · همراه‌یار</p>
+</main><script>
+function openSite(){const input=document.getElementById('url');let u;try{u=new URL(input.value.trim())}catch(e){document.getElementById('msg').textContent='آدرس واردشده معتبر نیست.';return}
+if(!['http:','https:'].includes(u.protocol)||!u.hostname){document.getElementById('msg').textContent='فقط آدرس‌های HTTP و HTTPS مجاز هستند.';return}
+if(window.HamrahYarAndroid&&typeof window.HamrahYarAndroid.openSite==='function'){document.getElementById('msg').textContent='در حال بازکردن سایت…';window.HamrahYarAndroid.openSite(u.href)}else{document.getElementById('msg').textContent='این قابلیت فقط در نسخه اندروید فعال است.'}}
+</script></body></html>
