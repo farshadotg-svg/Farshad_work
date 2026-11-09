@@ -195,11 +195,14 @@ class BrowserActivity : Activity() {
                             "آدرس سرور از طریق DNS پیدا نشد. پس از چند تلاش مجدد، اتصال برقرار نشد؛ DNS خصوصی یا شبکه گوشی را بررسی کن."
                         is java.net.SocketTimeoutException ->
                             "پاسخ سرور دیر رسید؛ احتمالاً سرور در حال بیدار شدن است."
+                        is java.net.SocketException ->
+                            "ارتباط شبکه هنگام دریافت پاسخ قطع شد؛ برنامه دوباره تلاش می‌کند."
                         else -> e.message ?: "اتصال به سرور ناموفق بود."
                     }
                     val retryable = e is java.net.UnknownHostException ||
                         e is java.net.SocketTimeoutException ||
-                        e is java.net.ConnectException
+                        e is java.net.ConnectException ||
+                        e is java.net.SocketException
                     if (!retryable || attempt == 6) break
                     try { Thread.sleep(1200L * attempt) } catch (_: InterruptedException) {
                         Thread.currentThread().interrupt()
