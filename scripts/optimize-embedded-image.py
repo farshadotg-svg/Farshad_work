@@ -12,7 +12,7 @@ if not path.is_file():
 
 html = path.read_text(encoding="utf-8")
 pattern = re.compile(
-    r'(?P<before><img\\b[^>]*?\\bsrc=["\'])data:image/png;base64,'
+    r'(?P<before><img\b[^>]*?\bsrc=["\'])data:image/png;base64,'
     r'(?P<data>[A-Za-z0-9+/=]+)(?P<after>["\'][^>]*>)',
     re.IGNORECASE,
 )
