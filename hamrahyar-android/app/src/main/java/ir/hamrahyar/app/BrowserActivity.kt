@@ -164,27 +164,54 @@ class BrowserActivity : Activity() {
         network.execute {
             var result: JSONObject? = null
             var errorText: String? = null
-            var connection: HttpURLConnection? = null
-            try {
-                connection = (URL("$backend/v1/agent/step").openConnection() as HttpURLConnection).apply {
-                    requestMethod = "POST"; connectTimeout = 12000; readTimeout = 30000; doOutput = true
-                    setRequestProperty("Content-Type", "application/json; charset=utf-8")
-                    setRequestProperty("Authorization", "Bearer $token")
+            // Retry transient DNS/network failures. Render may briefly sleep or the
+            // device resolver may fail once; do not immediately stop the assistant.
+            for (attempt in 1..3) {
+                var connection: HttpURLConnection? = null
+                try {
+                    val endpoint = URL("$backend/v1/agent/step")
+                    connection = (endpoint.openConnection() as HttpURLConnection).apply {
+                        requestMethod = "POST"
+                        connectTimeout = 15000
+                        readTimeout = 30000
+                        doOutput = true
+                        setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                        setRequestProperty("Authorization", "Bearer $token")
+                    }
+                    val payload = JSONObject().put("goal", goal).put("page", snapshot).put("previous", previous)
+                    connection.outputStream.use { it.write(payload.toString().toByteArray(StandardCharsets.UTF_8)) }
+                    val code = connection.responseCode
+                    val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+                    val body = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
+                    if (code !in 200..299) throw IllegalStateException("پاسخ سرور: HTTP $code")
+                    result = JSONObject(body)
+                    errorText = null
+                    break
+                } catch (e: Exception) {
+                    errorText = when (e) {
+                        is java.net.UnknownHostException ->
+                            "آدرس سرور از طریق DNS پیدا نشد. اتصال اینترنت یا DNS گوشی را بررسی کن."
+                        is java.net.SocketTimeoutException ->
+                            "پاسخ سرور دیر رسید؛ احتمالاً سرور در حال بیدار شدن است."
+                        else -> e.message ?: "اتصال به سرور ناموفق بود."
+                    }
+                    val retryable = e is java.net.UnknownHostException ||
+                        e is java.net.SocketTimeoutException ||
+                        e is java.net.ConnectException
+                    if (!retryable || attempt == 3) break
+                    try { Thread.sleep(1200L * attempt) } catch (_: InterruptedException) {
+                        Thread.currentThread().interrupt()
+                        break
+                    }
+                } finally {
+                    connection?.disconnect()
                 }
-                val payload = JSONObject().put("goal", goal).put("page", snapshot).put("previous", previous)
-                connection.outputStream.use { it.write(payload.toString().toByteArray(StandardCharsets.UTF_8)) }
-                val code = connection.responseCode
-                val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-                val body = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
-                if (code !in 200..299) throw IllegalStateException("پاسخ سرور: HTTP $code")
-                result = JSONObject(body)
-            } catch (e: Exception) {
-                errorText = e.message ?: "اتصال به سرور ناموفق بود."
-            } finally { connection?.disconnect() }
+            }
             runOnUiThread {
                 if (isFinishing || stopped) return@runOnUiThread
-                if (errorText != null || result == null) finishAssistant("اتصال هوش مصنوعی برقرار نشد: ${errorText ?: "خطای نامشخص"}")
-                else handlePlan(result!!)
+                if (errorText != null || result == null) {
+                    finishAssistant("اتصال هوش مصنوعی برقرار نشد: ${errorText ?: "خطای نامشخص"}")
+                } else handlePlan(result!!)
             }
         }
     }
