@@ -54,7 +54,7 @@ class MainActivity : Activity() {
                     Toast.makeText(this@MainActivity, "آدرس سرور باید HTTPS و توکن حداقل ۳۲ نویسه باشد", Toast.LENGTH_LONG).show()
                     return@runOnUiThread
                 }
-                prefs.edit().putString("agent_backend", backend).putString("agent_token", token).apply()
+                prefs.edit().putString("agent_backend", backend).remove("agent_token").apply()
                 val intent = Intent(this@MainActivity, BrowserActivity::class.java)
                     .putExtra(BrowserActivity.EXTRA_URL, uri.toString())
                     .putExtra(BrowserActivity.EXTRA_GOAL, goal)
@@ -84,7 +84,7 @@ class MainActivity : Activity() {
         fun getAgentConfig(): String {
             val config = JSONObject()
                 .put("backend", prefs.getString("agent_backend", "") ?: "")
-                .put("token", prefs.getString("agent_token", "") ?: "")
+                
             return config.toString()
         }
     }
