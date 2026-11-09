@@ -112,7 +112,7 @@ class BrowserActivity : Activity() {
     private val snapshotScript = """
         (function(){
           const norm=s=>(s||'').toString().replace(/[ي]/g,'ی').replace(/[ك]/g,'ک').replace(/\s+/g,' ').trim();
-          const sensitive=/(captcha|کپچا|otp|one.?time|verification.?code|رمز|password|پسورد|کد.?تأیید|کد.?تایید|national.?id|کد.?ملی|identity|احراز.?هویت|queue|صف.?انتظار)/i;
+          const sensitive=/(captcha|کپچا|otp|one.?time|verification.?code|رمز|password|پسورد|کد.?تأیید|کد.?تایید|national.?id|کد.?ملی|identity|احراز.?هویت|queue|صف.?انتظار|credit.?card|card.?number|cvv|cvc|iban|bank.?account|شماره.?کارت|شماره.?حساب|شبا|رمز.?پویا)/i;
           const elements=[]; let id=1;
           const label=e=>{
             const labels=e.labels?[...e.labels].map(x=>x.innerText).join(' '):'';
@@ -125,7 +125,7 @@ class BrowserActivity : Activity() {
             if(e.disabled||e.readOnly||e.getAttribute('aria-disabled')==='true'||e.closest('[aria-hidden=true]'))continue;
             if(sensitive.test(hint+' '+text)||['password','hidden','file','checkbox','radio','submit','reset','image'].includes(type))continue;
             let kind='other';
-            if(['input','textarea','select'].includes(tag)&&['text','email','tel','number','search','url','','textarea','select-one','select-multiple'].includes(type))kind='field';
+            if(['input','textarea','select'].includes(tag)&&['text','email','tel','number','search','url','date','datetime-local','month','time','','textarea','select-one','select-multiple'].includes(type))kind='field';
             if(['button','a'].includes(tag)||e.getAttribute('role')==='button')kind='click';
             if(kind==='other')continue;
             const itemId=id++; e.setAttribute('data-hy-agent-id',String(itemId));
@@ -224,7 +224,7 @@ class BrowserActivity : Activity() {
                       if(!e||e.disabled||e.readOnly)return 'not_found';
                       const t=(e.type||'').toLowerCase();
                       const hint=[e.name,e.id,e.getAttribute('aria-label'),e.getAttribute('placeholder'),e.autocomplete].join(' ');
-                      if(/password|captcha|otp|کپچا|رمز|کد.?تأیید|کد.?ملی|national.?id|identity|احراز.?هویت/i.test(hint)||['password','hidden','file','checkbox','radio','submit','reset'].includes(t))return 'blocked';
+                      if(/password|captcha|otp|کپچا|رمز|کد.?تأیید|کد.?ملی|national.?id|identity|احراز.?هویت|credit.?card|card.?number|cvv|cvc|iban|bank.?account|شماره.?کارت|شماره.?حساب|شبا|رمز.?پویا/i.test(hint)||['password','hidden','file','checkbox','radio','submit','reset'].includes(t))return 'blocked';
                       if(!['INPUT','TEXTAREA','SELECT'].includes(e.tagName))return 'not_field';
                       const v=${JSONObject.quote(value)};
                       if(e.tagName==='SELECT'){
