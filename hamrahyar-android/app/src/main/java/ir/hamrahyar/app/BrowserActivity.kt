@@ -128,7 +128,9 @@ class BrowserActivity : Activity() {
         web.evaluateJavascript(script) { result ->
             runOnUiThread {
                 val summary = runCatching {
-                    val raw = result?.trim('"')?.replace("\\"", """) ?: "{}"
+                    val raw = result?.let { encoded ->
+                        runCatching { org.json.JSONArray("[$encoded]").getString(0) }.getOrElse { encoded }
+                    } ?: "{}"
                     JSONObject(raw)
                 }.getOrNull()
                 if (summary == null) {
