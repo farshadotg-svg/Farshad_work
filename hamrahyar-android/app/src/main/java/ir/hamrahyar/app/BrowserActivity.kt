@@ -62,10 +62,10 @@ class BrowserActivity : Activity() {
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
                     request.url.scheme !in listOf("http", "https")
                 override fun onPageStarted(view: WebView, startedUrl: String, favicon: android.graphics.Bitmap?) {
-                    progress.visibility = View.VISIBLE
+                    this@BrowserActivity.progress.visibility = View.VISIBLE
                 }
                 override fun onPageFinished(view: WebView, finishedUrl: String) {
-                    progress.visibility = View.GONE
+                    this@BrowserActivity.progress.visibility = View.GONE
                     if (finishedUrl != lastUrl) { lastUrl = finishedUrl; previous = JSONArray() }
                     if (!assistantRunning && !stopped) startAgentLoop()
                 }
