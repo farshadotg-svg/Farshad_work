@@ -9,10 +9,12 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
+import org.json.JSONObject
 import java.net.URI
 
 class MainActivity : Activity() {
     private lateinit var webView: WebView
+    private val prefs by lazy { getSharedPreferences("hamrahyar_local", MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +46,21 @@ class MainActivity : Activity() {
                 startActivity(Intent(this@MainActivity, BrowserActivity::class.java).putExtra(BrowserActivity.EXTRA_URL, uri.toString()))
             }
         }
+
+        @JavascriptInterface
+        fun saveProfile(rawJson: String) {
+            runCatching {
+                val source = JSONObject(rawJson)
+                val safe = JSONObject()
+                listOf("fullName", "phone", "nationalId", "email", "address").forEach { key ->
+                    safe.put(key, source.optString(key).take(250))
+                }
+                prefs.edit().putString("profile", safe.toString()).apply()
+            }
+        }
+
+        @JavascriptInterface
+        fun getProfile(): String = prefs.getString("profile", "{}") ?: "{}"
     }
 
     @Deprecated("Deprecated in Android API")
