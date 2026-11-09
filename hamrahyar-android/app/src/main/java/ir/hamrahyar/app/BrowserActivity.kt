@@ -30,6 +30,7 @@ class BrowserActivity : Activity() {
     private lateinit var web: WebView
     private lateinit var report: TextView
     private lateinit var progress: ProgressBar
+    private lateinit var resumeButton: android.widget.Button
     private val prefs by lazy { getSharedPreferences("hamrahyar_local", MODE_PRIVATE) }
     private val network = Executors.newSingleThreadExecutor()
     private var assistantRunning = false
@@ -65,7 +66,7 @@ class BrowserActivity : Activity() {
                 }
                 override fun onPageFinished(view: WebView, finishedUrl: String) {
                     progress.visibility = View.GONE
-                    if (finishedUrl != lastUrl) { lastUrl = finishedUrl; stepCount = 0; previous = JSONArray() }
+                    if (finishedUrl != lastUrl) { lastUrl = finishedUrl; previous = JSONArray() }
                     if (!assistantRunning && !stopped) startAgentLoop()
                 }
             }
@@ -76,7 +77,21 @@ class BrowserActivity : Activity() {
             text = "صفحه در حال بارگذاری است…"
         }
         val scroll = ScrollView(this).apply { setBackgroundColor(Color.rgb(17, 26, 45)); addView(report) }
-        root.addView(scroll, LinearLayout.LayoutParams(-1, dp(165)))
+        root.addView(scroll, LinearLayout.LayoutParams(-1, dp(135)))
+        resumeButton = android.widget.Button(this).apply {
+            text = "ادامه پس از انجام مرحله دستی"
+            visibility = View.GONE
+            setOnClickListener {
+                if (!assistantRunning) {
+                    stopped = false
+                    visibility = View.GONE
+                    assistantRunning = true
+                    report.text = "صفحه دوباره بررسی می‌شود…"
+                    observePage()
+                }
+            }
+        }
+        root.addView(resumeButton, LinearLayout.LayoutParams(-1, dp(52)))
         setContentView(root)
         web.loadUrl(url)
         if (backend.isBlank() || token.isBlank() || goal.isBlank()) {
@@ -185,7 +200,7 @@ class BrowserActivity : Activity() {
                     "blocked" -> "این مرحله به دلیل محدودیت امنیتی متوقف شد."
                     else -> "برای ادامه، اقدام لازم را خودت انجام بده."
                 }
-            }); return
+            }, allowResume = status == "needs_user"); return
         }
         if (actions.length() == 0) {
             finishAssistant(message.ifBlank { "برای ادامه اقدام امنی پیدا نشد؛ صفحه را بررسی کن." }); return
@@ -254,13 +269,15 @@ class BrowserActivity : Activity() {
                 previous.put(JSONObject().put("type", type).put("result", "waited"))
                 web.postDelayed({ executeActionAt(actions, index + 1) }, 1200)
             }
-            "ask_user", "stop" -> finishAssistant(reason.ifBlank { "برای ادامه به بررسی تو نیاز است." })
+            "ask_user" -> finishAssistant(reason.ifBlank { "برای ادامه به بررسی تو نیاز است." }, allowResume = true)
+            "stop" -> finishAssistant(reason.ifBlank { "این مرحله متوقف شد." })
             else -> executeActionAt(actions, index + 1)
         }
     }
 
-    private fun finishAssistant(message: String) {
+    private fun finishAssistant(message: String, allowResume: Boolean = false) {
         assistantRunning = false; stopped = true
+        if (::resumeButton.isInitialized) resumeButton.visibility = if (allowResume) View.VISIBLE else View.GONE
         report.text = "گزارش همراه‌یار\n$message\n\nفیلدهای تکمیل‌شده: $filledCount\nتعداد بررسی‌های هوشمند: $stepCount\n\nرمز، کد پیامکی، کپچا، احراز هویت و صف انتظار خودکار انجام نمی‌شوند. ثبت نهایی، خرید و پرداخت نیز همیشه با خودت است."
     }
     private fun decodeJsString(raw: String?): String {
