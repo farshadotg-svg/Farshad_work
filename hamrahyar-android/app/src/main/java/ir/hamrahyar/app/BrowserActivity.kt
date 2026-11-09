@@ -41,7 +41,7 @@ class BrowserActivity : Activity() {
                     return request.url.scheme !in listOf("http", "https")
                 }
                 override fun onPageFinished(view: WebView, finishedUrl: String) {
-                    progress.animate().alpha(0f).setDuration(150).start()
+                    progress.progress = 100
                     inspectPage()
                 }
             }
