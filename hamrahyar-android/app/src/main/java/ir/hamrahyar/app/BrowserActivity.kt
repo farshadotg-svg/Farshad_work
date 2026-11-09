@@ -41,7 +41,7 @@ class BrowserActivity : Activity() {
                     return request.url.scheme !in listOf("http", "https")
                 }
                 override fun onPageFinished(view: WebView, finishedUrl: String) {
-                    progress.visibility = View.GONE
+                    progress.setVisibility(View.GONE)
                     inspectPage()
                 }
             }
