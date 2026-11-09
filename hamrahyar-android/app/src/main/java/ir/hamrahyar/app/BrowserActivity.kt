@@ -110,7 +110,7 @@ class BrowserActivity : Activity() {
             if(e.disabled||e.readOnly||e.getAttribute('aria-disabled')==='true'||e.closest('[aria-hidden=true]'))continue;
             if(sensitive.test(hint+' '+text)||['password','hidden','file','checkbox','radio','submit','reset','image'].includes(type))continue;
             let kind='other';
-            if(['input','textarea','select'].includes(tag)&&['text','email','tel','number','search','url',''].includes(type))kind='field';
+            if(['input','textarea','select'].includes(tag)&&['text','email','tel','number','search','url','','textarea','select-one','select-multiple'].includes(type))kind='field';
             if(['button','a'].includes(tag)||e.getAttribute('role')==='button')kind='click';
             if(kind==='other')continue;
             const itemId=id++; e.setAttribute('data-hy-agent-id',String(itemId));
