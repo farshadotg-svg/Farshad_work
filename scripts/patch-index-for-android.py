@@ -1,6 +1,4 @@
 from pathlib import Path
-import base64
-import re
 
 path = Path("index.html")
 html = path.read_text(encoding="utf-8")
@@ -139,34 +137,5 @@ required = [
 for marker in required:
     if marker not in html:
         raise SystemExit(f"Required Android integration is missing: {marker}")
-
-# Extract the large banner PNG from HTML into a local Android asset.
-# The PNG bytes are preserved exactly; this only removes Base64 parsing/HTML overhead.
-banner_pattern = re.compile(
-    r'(<img\\b(?=[^>]*\\bclass=["\'][^"\']*\\bbrand-banner\\b)[^>]*\\bsrc=["\'])'
-    r'data:image/png;base64,([^"\']+)(["\'][^>]*>)',
-    re.IGNORECASE,
-)
-matches = list(banner_pattern.finditer(html))
-if len(matches) > 1:
-    raise SystemExit(f"Expected one brand banner image, found {len(matches)}.")
-if matches:
-    encoded = matches[0].group(2)
-    try:
-        banner_bytes = base64.b64decode(encoded, validate=True)
-    except Exception as exc:
-        raise SystemExit(f"Brand banner Base64 is invalid: {exc}")
-    if not banner_bytes.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
-        raise SystemExit("Brand banner is not a valid PNG file.")
-    asset_dir = Path("app/src/main/assets")
-    asset_dir.mkdir(parents=True, exist_ok=True)
-    (asset_dir / "brand-banner.png").write_bytes(banner_bytes)
-    html, replaced = banner_pattern.subn(r'\\1brand-banner.png\\3', html, count=1)
-    if replaced != 1 or "data:image/png;base64," in html:
-        raise SystemExit("Could not safely externalize the brand banner image.")
-else:
-    # A previous build may already have a relative local asset reference.
-    if 'class="brand-banner"' not in html or 'brand-banner.png' not in html:
-        raise SystemExit("Brand banner image was not found; refusing to build without it.")
 
 path.write_text(html, encoding="utf-8")
