@@ -164,9 +164,9 @@ class BrowserActivity : Activity() {
         network.execute {
             var result: JSONObject? = null
             var errorText: String? = null
-            // Retry transient DNS/network failures. Render may briefly sleep or the
-            // device resolver may fail once; do not immediately stop the assistant.
-            for (attempt in 1..3) {
+            // Android may temporarily cache a failed DNS lookup. Use a longer,
+            // bounded backoff so transient resolver failures can recover.
+            for (attempt in 1..6) {
                 var connection: HttpURLConnection? = null
                 try {
                     val endpoint = URL("$backend/v1/agent/step")
@@ -174,7 +174,9 @@ class BrowserActivity : Activity() {
                         requestMethod = "POST"
                         connectTimeout = 15000
                         readTimeout = 30000
+                        useCaches = false
                         doOutput = true
+                        setRequestProperty("Connection", "close")
                         setRequestProperty("Content-Type", "application/json; charset=utf-8")
                         setRequestProperty("Authorization", "Bearer $token")
                     }
@@ -190,7 +192,7 @@ class BrowserActivity : Activity() {
                 } catch (e: Exception) {
                     errorText = when (e) {
                         is java.net.UnknownHostException ->
-                            "آدرس سرور از طریق DNS پیدا نشد. اتصال اینترنت یا DNS گوشی را بررسی کن."
+                            "آدرس سرور از طریق DNS پیدا نشد. پس از چند تلاش مجدد، اتصال برقرار نشد؛ DNS خصوصی یا شبکه گوشی را بررسی کن."
                         is java.net.SocketTimeoutException ->
                             "پاسخ سرور دیر رسید؛ احتمالاً سرور در حال بیدار شدن است."
                         else -> e.message ?: "اتصال به سرور ناموفق بود."
@@ -198,7 +200,7 @@ class BrowserActivity : Activity() {
                     val retryable = e is java.net.UnknownHostException ||
                         e is java.net.SocketTimeoutException ||
                         e is java.net.ConnectException
-                    if (!retryable || attempt == 3) break
+                    if (!retryable || attempt == 6) break
                     try { Thread.sleep(1200L * attempt) } catch (_: InterruptedException) {
                         Thread.currentThread().interrupt()
                         break
