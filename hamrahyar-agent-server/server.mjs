@@ -111,6 +111,11 @@ app.post("/v1/agent/step", async (req, res) => {
   }
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`HamrahYar agent backend listening on ${PORT}`);
 });
+
+// Keep Node upstream sockets alive longer than the Render edge timeout.
+server.keepAliveTimeout = 120000;
+server.headersTimeout = 125000;
+server.requestTimeout = 120000;
