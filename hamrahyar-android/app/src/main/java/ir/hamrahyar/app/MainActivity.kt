@@ -13,6 +13,7 @@ import org.json.JSONObject
 import java.net.URI
 
 class MainActivity : Activity() {
+    companion object { private const val DEFAULT_AGENT_BACKEND = "https://hamrahyar-agent.onrender.com" }
     private lateinit var webView: WebView
     private val prefs by lazy { getSharedPreferences("hamrahyar_local", MODE_PRIVATE) }
 
@@ -48,7 +49,7 @@ class MainActivity : Activity() {
                     Toast.makeText(this@MainActivity, "هدف انجام کار را بنویس", Toast.LENGTH_SHORT).show()
                     return@runOnUiThread
                 }
-                val backend = rawBackend.trim().trimEnd('/')
+                val backend = rawBackend.trim().trimEnd('/').ifBlank { DEFAULT_AGENT_BACKEND }
                 val token = rawToken.trim()
                 if (backend.isNotBlank() && (!backend.startsWith("https://") || token.length < 32)) {
                     Toast.makeText(this@MainActivity, "آدرس سرور باید HTTPS و توکن حداقل ۳۲ نویسه باشد", Toast.LENGTH_LONG).show()
@@ -83,7 +84,7 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun getAgentConfig(): String {
             val config = JSONObject()
-                .put("backend", prefs.getString("agent_backend", "") ?: "")
+                .put("backend", prefs.getString("agent_backend", DEFAULT_AGENT_BACKEND) ?: DEFAULT_AGENT_BACKEND)
                 
             return config.toString()
         }
