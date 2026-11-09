@@ -1,0 +1,12 @@
+{
+  "name": "hamrahyar-agent-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node server.mjs" },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "express": "^5.1.0",
+    "openai": "^5.20.0"
+  }
+}
