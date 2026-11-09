@@ -129,12 +129,12 @@ if "id=\"app-select-popup-script\"" not in html:
 if "id=\"app-select-popup-script\"" not in html or "id=\"appSelectOverlay\"" not in html:
     raise SystemExit("Themed select popup was not installed correctly.")
 
-    # Remove the redundant second Firebase initialization. The earlier startup
-    # block already initializes Firebase from the saved configuration (or default).
-    duplicate_firebase_init = "try{const c=DEFAULT_FIREBASE_CONFIG;localStorage.setItem('waterFirebaseConfig_v1',JSON.stringify(c));initFirebase(c)}catch(e){setCloudStatus('راه‌اندازی Firebase ناموفق بود: '+e.message)}"
-    if html.count(duplicate_firebase_init) != 1:
-        raise SystemExit("Expected exactly one redundant Firebase initialization block; refusing an unsafe patch.")
-    html = html.replace(duplicate_firebase_init, "", 1)
+# Remove the redundant second Firebase initialization. The earlier startup
+# block already initializes Firebase from the saved configuration (or default).
+duplicate_firebase_init = "try{const c=DEFAULT_FIREBASE_CONFIG;localStorage.setItem('waterFirebaseConfig_v1',JSON.stringify(c));initFirebase(c)}catch(e){setCloudStatus('راه‌اندازی Firebase ناموفق بود: '+e.message)}"
+if html.count(duplicate_firebase_init) != 1:
+    raise SystemExit("Expected exactly one redundant Firebase initialization block; refusing an unsafe patch.")
+html = html.replace(duplicate_firebase_init, "", 1)
 
 required = [
     "window.AndroidBridge.copyText(txt)",
