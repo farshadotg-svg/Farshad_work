@@ -17,6 +17,10 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+      - name: Set up Node.js for HTML script validation
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - name: Require latest app HTML and Firebase config
         run: |
           test -s index.html || (echo 'Missing or empty latest index.html.' && exit 1)
@@ -24,6 +28,7 @@ jobs:
           python3 scripts/patch-index-for-android.py
           python3 -m pip install --quiet Pillow
           python3 scripts/optimize-embedded-image.py
+          python3 scripts/check-inline-js.py
           grep -Fq "window.AndroidBridge.copyText(txt)" index.html
           grep -Fq "window.AndroidBridge.saveTextFile('backup-hesab-ab.json'" index.html
           grep -Fq "window.AndroidBridge.saveImageToGalleryBase64(btoa(binary),name)" index.html

@@ -53,6 +53,7 @@ public class MainActivity extends Activity {
     private static final int REQUEST_INVOICE_CAMERA = 4103;
     private static final int REQUEST_INVOICE_GALLERY = 4104;
     private Uri pendingCameraUri;
+    private volatile String nextInvoicePickerMode = "";
     private byte[] pendingSaveBytes;
 
     @Override public void onCreate(Bundle state) {
@@ -123,23 +124,37 @@ public class MainActivity extends Activity {
                         }
                     }
                 }
+                String requestedPickerMode = nextInvoicePickerMode;
+                nextInvoicePickerMode = "";
+                boolean cameraRequested = "camera".equals(requestedPickerMode)
+                        || (requestedPickerMode.isEmpty() && params.isCaptureEnabled());
                 try {
                     if (wantsImage) {
-                        if (params.isCaptureEnabled()) {
+                        if (cameraRequested) {
+                            // The camera button explicitly requests the camera, independent of WebView capture hints.
                             launchInvoiceCamera();
                         } else {
                             Intent gallery;
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                // Android 13+: open the native photo picker, not the Files browser.
+                                // Android 13+: use the system Photo Picker directly.
                                 gallery = new Intent(MediaStore.ACTION_PICK_IMAGES);
-                                gallery.setType("image/*");
                                 if (params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) {
                                     gallery.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, 10);
                                 }
+                                if (gallery.resolveActivity(getPackageManager()) == null) {
+                                    gallery = new Intent(Intent.ACTION_GET_CONTENT);
+                                    gallery.addCategory(Intent.CATEGORY_OPENABLE);
+                                    gallery.setType("image/*");
+                                    gallery.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,
+                                            params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE);
+                                }
                             } else {
-                                // Older Android versions: open the image collection directly.
-                                gallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                                // Older Android versions: request image content, not a generic folder browser.
+                                gallery = new Intent(Intent.ACTION_GET_CONTENT);
+                                gallery.addCategory(Intent.CATEGORY_OPENABLE);
                                 gallery.setType("image/*");
+                                gallery.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,
+                                        params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE);
                                 gallery.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                             }
                             startActivityForResult(gallery, REQUEST_INVOICE_GALLERY);
@@ -315,6 +330,12 @@ public class MainActivity extends Activity {
     }
 
     private class AndroidBridge {
+        @JavascriptInterface public void setInvoicePickerMode(String mode) {
+            if ("camera".equals(mode) || "gallery".equals(mode)) {
+                nextInvoicePickerMode = mode;
+            }
+        }
+
         @JavascriptInterface public void saveTextFile(String filename, String content, String mimeType) {
             runOnUiThread(() -> {
                 try {
