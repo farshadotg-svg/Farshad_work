@@ -136,25 +136,15 @@ public class MainActivity extends Activity {
                         } else {
                             Intent gallery;
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                // Android 13+: use the system Photo Picker directly.
+                                // Open the system Photo Picker directly; avoid falling back to a document/file browser.
                                 gallery = new Intent(MediaStore.ACTION_PICK_IMAGES);
                                 if (params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) {
                                     gallery.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, 10);
                                 }
-                                if (gallery.resolveActivity(getPackageManager()) == null) {
-                                    gallery = new Intent(Intent.ACTION_GET_CONTENT);
-                                    gallery.addCategory(Intent.CATEGORY_OPENABLE);
-                                    gallery.setType("image/*");
-                                    gallery.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,
-                                            params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE);
-                                }
                             } else {
-                                // Older Android versions: request image content, not a generic folder browser.
-                                gallery = new Intent(Intent.ACTION_GET_CONTENT);
-                                gallery.addCategory(Intent.CATEGORY_OPENABLE);
+                                // Older Android versions: open the image collection through the Gallery provider.
+                                gallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                                 gallery.setType("image/*");
-                                gallery.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,
-                                        params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE);
                                 gallery.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                             }
                             startActivityForResult(gallery, REQUEST_INVOICE_GALLERY);
