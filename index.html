@@ -1243,7 +1243,7 @@ function invoicePhotoReset(){invoicePhotoLoadToken++;invoicePhotoBusy=false;cons
 function invoicePhotoShow(data,label){invoicePhotoDraft=Array.isArray(data)?data.slice():[data];invoicePhotoRender();invoicePhotoStatus(label||'عکس‌ها آماده هستند؛ با ذخیره سرویس ثبت می‌شوند.')}
 function invoicePhotoOpenCamera(){$('invoicePhotoCamera').click()}
 function invoicePhotoOpenGallery(){$('invoicePhotoGallery').click()}
-async function invoicePhotoSelected(e){const files=Array.from(e.target.files||[]);if(!files.length)return;const token=++invoicePhotoLoadToken;invoicePhotoBusy=true;$('saveBtn').disabled=true;invoicePhotoStatus('در حال آماده‌سازی '+faNum(files.length)+' عکس...');let added=0;try{for(const file of files){const data=await invoicePhotoCompress(file);if(token!==invoicePhotoLoadToken)return;if(!Array.isArray(invoicePhotoDraft))invoicePhotoDraft=[];invoicePhotoDraft.push(data);added++}invoicePhotoRender();invoicePhotoRemoveRequested=false;invoicePhotoStatus(faNum(added)+' عکس اضافه شد؛ برای ثبت نهایی ذخیره سرویس را بزن.')}catch(err){if(token===invoicePhotoLoadToken){invoicePhotoRender();alert('یکی از عکس‌ها آماده نشد. عکس‌های آماده‌شده حفظ شدند؛ دوباره تلاش کن.');invoicePhotoStatus('تعداد عکس‌های آماده: '+faNum((invoicePhotoDraft||[]).length))}}finally{if(token===invoicePhotoLoadToken){invoicePhotoBusy=false;$('saveBtn').disabled=false}e.target.value=''}}
+async function invoicePhotoSelected(e){const files=Array.from(e.target.files||[]);if(!files.length)return;const token=++invoicePhotoLoadToken;invoicePhotoBusy=true;$('saveBtn').disabled=true;invoicePhotoStatus('برای هر عکس، لبه چپ و راست را تنظیم کن...');let added=0,cancelled=false;try{for(const file of files){const cropped=await invoicePhotoCropFile(file);if(token!==invoicePhotoLoadToken)return;if(!cropped){cancelled=true;break}const data=await invoicePhotoCompress(cropped);if(token!==invoicePhotoLoadToken)return;if(!Array.isArray(invoicePhotoDraft))invoicePhotoDraft=[];invoicePhotoDraft.push(data);added++}invoicePhotoRender();if(added)invoicePhotoRemoveRequested=false;invoicePhotoStatus(added?faNum(added)+' عکس برش خورد و آماده شد؛ برای ثبت نهایی ذخیره سرویس را بزن.':cancelled?'انتخاب عکس لغو شد.':'عکسی آماده نشد.')}catch(err){if(token===invoicePhotoLoadToken){invoicePhotoRender();alert('برش یا آماده‌سازی عکس ممکن نشد. دوباره تلاش کن.');invoicePhotoStatus('تعداد عکس‌های آماده: '+faNum((invoicePhotoDraft||[]).length))}}finally{if(token===invoicePhotoLoadToken){invoicePhotoBusy=false;$('saveBtn').disabled=false}e.target.value=''}}
 async function editService(id){let r=records.find(x=>x.id===id);if(!r)return;invoicePhotoReset();const token=++invoicePhotoLoadToken;$('editId').value=r.id;$('customer').value=r.customer;$('customerPhone').value=r.phone||lookupCustomerPhone(r.customer);delete $('customerPhone').dataset.edited;$('count').value=r.count;$('price').value=enNum(r.price);$('source').value=r.source;if($('serviceCategory'))$('serviceCategory').value=r.classification||'';if(typeof classRefreshFormCategories==='function')classRefreshFormCategories();$('serviceDate').value=toJalali(r.date);$('description').value=r.description||'';$('paid').checked=r.paid;$('formTitle').textContent='ویرایش سرویس';$('saveBtn').textContent='ذخیره تغییرات';updatePreview();showPage('add');try{const photos=await invoicePhotoGetForService(r.id);if(token!==invoicePhotoLoadToken)return;invoicePhotoDraft=photos.map(p=>p.dataUrl);invoicePhotoRender();invoicePhotoStatus(photos.length?'عکس‌های قبلی حفظ شده‌اند؛ می‌توانی عکس جدید اضافه یا هرکدام را حذف کنی.':'برای این سرویس عکسی ثبت نشده است.')}catch(err){invoicePhotoStatus('خواندن عکس‌های قبلی ممکن نشد.')}}
 async function showServiceDetails(id){const r=records.find(x=>String(x.id)===String(id));if(!r)return;const amount=Number(r.count)*Number(r.price);const items=[['نام مشتری',r.customer||'—',''],['تعداد سرویس',faNum(r.count),''],['تاریخ',toJalali(r.date),''],['محل آب‌گیری',r.source||'—',''],['شماره تلفن',r.phone||lookupCustomerPhone(r.customer)||'ثبت نشده','phone-item'],['وضعیت پرداخت',r.paid?'✓ پرداخت شده':'✕ پرداخت نشده',r.paid?'status-paid':'status-unpaid'],...(r.description?[['یادداشت',r.description,'note-item']]:[]),['مبلغ کل',enNum(amount)+' تومان','money-highlight'],['سهم فرشاد',enNum(Math.floor(amount/3))+' تومان','money-highlight share-highlight']];$('serviceDetailsContent').innerHTML=items.map(([k,v,cls])=>{const phoneRow=cls==='phone-item'&&v!=='ثبت نشده';const val=phoneRow?`<a href="tel:${esc(phoneDigits(v))}" style="color:inherit;text-decoration:underline;text-underline-offset:3px;direction:ltr;unicode-bidi:plaintext">${esc(String(v))}</a>`:esc(String(v));return `<div class="details-item ${cls}"><small>${esc(k)}</small><strong>${val}</strong></div>`}).join('');try{const photos=await invoicePhotoGetForService(r.id);if(photos.length){const html=photos.map((p,i)=>`<button type="button" class="invoice-photo-thumb" onclick="invoicePhotoPopupOpen(this.querySelector('img').src)"><img src="${p.dataUrl}" alt="فاکتور ${i+1}"></button>`).join('');$('serviceDetailsContent').insertAdjacentHTML('beforeend',`<div class="details-item invoice-photo-detail"><small>عکس‌های فاکتور (${faNum(photos.length)})</small><div class="invoice-photo-thumbs">${html}</div></div>`)}}catch(err){}$('serviceDetailsOverlay').classList.add('show')}
 
@@ -1340,6 +1340,58 @@ body.light #invoiceCropOverlay .fcrop-control label{color:#293d4d}
  };
 })();
 </script>
+
+<style id="invoice-manual-horizontal-crop-style">
+#invoiceCropOverlay{position:fixed;inset:0;z-index:2147483646;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(2,7,15,.88);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);direction:rtl}
+#invoiceCropOverlay.open{display:flex}
+#invoiceCropDialog{width:min(100%,560px);max-height:94dvh;overflow:auto;padding:16px;border:1px solid #40546b;border-radius:19px;background:#101c2b;color:#f5f7fa;box-shadow:0 20px 70px #0009;text-align:center}
+#invoiceCropDialog h3{margin:0 0 8px;font-size:17px}
+#invoiceCropDialog p{margin:0 0 14px;color:#c3d0df;font-size:13px;line-height:1.8}
+#invoiceCropStage{position:relative;display:inline-block;max-width:100%;margin:0 auto;line-height:0;overflow:visible;touch-action:pan-y;user-select:none}
+#invoiceCropImage{display:block;max-width:82vw;max-height:58vh;width:auto;height:auto;object-fit:contain;pointer-events:none}
+.invoice-crop-mask{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.58);pointer-events:none}
+#invoiceCropMaskLeft{left:0;width:var(--crop-left,0%)}
+#invoiceCropMaskRight{left:var(--crop-right,100%);right:0}
+.invoice-crop-handle{position:absolute;top:0;bottom:0;width:34px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ew-resize}
+.invoice-crop-handle:after{content:"";height:100%;width:3px;border-radius:4px;background:#ffd36c;box-shadow:0 0 0 1px #17283a,0 0 12px #ffd36c99}
+.invoice-crop-handle:before{content:"↔";position:absolute;top:45%;width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#ffd36c;color:#17283a;font-size:15px;font-weight:bold;box-shadow:0 2px 8px #0008}
+#invoiceCropHandleLeft{left:var(--crop-left,0%)}
+#invoiceCropHandleRight{left:var(--crop-right,100%)}
+#invoiceCropActions{display:flex;gap:10px;margin-top:16px}
+#invoiceCropActions button{flex:1;min-height:46px;border:1px solid #53677d;border-radius:12px;background:#24364a;color:#f5f7fa;font:inherit;font-weight:700}
+#invoiceCropAccept{background:linear-gradient(135deg,#176d50,#104b39)!important;border-color:#2aa978!important}
+body.light #invoiceCropDialog{background:#f7f9fb;color:#24364a;border-color:#d3dce5}
+body.light #invoiceCropDialog p{color:#536477}
+@media(max-width:420px){#invoiceCropDialog{padding:12px}#invoiceCropImage{max-width:80vw;max-height:54vh}}
+</style>
+<div id="invoiceCropOverlay" aria-hidden="true">
+ <section id="invoiceCropDialog" role="dialog" aria-modal="true" aria-labelledby="invoiceCropTitle">
+  <h3 id="invoiceCropTitle">تنظیم برش عکس فاکتور</h3>
+  <p>خط زرد سمت چپ و راست را با انگشت جابه‌جا کن تا قسمت اضافه عکس حذف شود.</p>
+  <div id="invoiceCropStage">
+   <img id="invoiceCropImage" alt="پیش‌نمایش برش عکس">
+   <div id="invoiceCropMaskLeft" class="invoice-crop-mask"></div>
+   <div id="invoiceCropMaskRight" class="invoice-crop-mask"></div>
+   <div id="invoiceCropHandleLeft" class="invoice-crop-handle" role="slider" aria-label="لبه چپ برش"></div>
+   <div id="invoiceCropHandleRight" class="invoice-crop-handle" role="slider" aria-label="لبه راست برش"></div>
+  </div>
+  <div id="invoiceCropActions">
+   <button type="button" onclick="invoiceCropFinish(false)">انصراف</button>
+   <button type="button" id="invoiceCropAccept" onclick="invoiceCropFinish(true)">تأیید برش</button>
+  </div>
+ </section>
+</div>
+<script id="invoice-manual-horizontal-crop-script">
+let invoiceCropResolve=null,invoiceCropFileObject=null,invoiceCropObjectUrl=null,invoiceCropLeft=0,invoiceCropRight=1,invoiceCropDrag=null;
+function invoiceCropUpdate(){const stage=$('invoiceCropStage');if(!stage)return;stage.style.setProperty('--crop-left',(invoiceCropLeft*100)+'%');stage.style.setProperty('--crop-right',(invoiceCropRight*100)+'%');$('invoiceCropHandleLeft').setAttribute('aria-valuenow',String(Math.round(invoiceCropLeft*100)));$('invoiceCropHandleRight').setAttribute('aria-valuenow',String(Math.round(invoiceCropRight*100)))}
+function invoiceCropMove(side,event){const rect=$('invoiceCropStage').getBoundingClientRect();if(!rect.width)return;const p=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width));if(side==='left')invoiceCropLeft=Math.max(0,Math.min(p,invoiceCropRight-.08));else invoiceCropRight=Math.min(1,Math.max(p,invoiceCropLeft+.08));invoiceCropUpdate()}
+function invoicePhotoCropFile(file){return new Promise(resolve=>{const overlay=$('invoiceCropOverlay'),img=$('invoiceCropImage');if(!overlay||!img){resolve(file);return}invoiceCropResolve=resolve;invoiceCropFileObject=file;invoiceCropLeft=0;invoiceCropRight=1;invoiceCropDrag=null;invoiceCropObjectUrl=URL.createObjectURL(file);img.onload=()=>{invoiceCropUpdate();overlay.classList.add('open');overlay.setAttribute('aria-hidden','false')};img.onerror=()=>{const done=invoiceCropResolve;invoiceCropResolve=null;invoiceCropCleanup();if(done)done(null)};img.src=invoiceCropObjectUrl})}
+function invoiceCropCleanup(){const overlay=$('invoiceCropOverlay');if(overlay){overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true')}const img=$('invoiceCropImage');if(img)img.removeAttribute('src');if(invoiceCropObjectUrl){URL.revokeObjectURL(invoiceCropObjectUrl);invoiceCropObjectUrl=null}invoiceCropDrag=null;invoiceCropFileObject=null}
+function invoiceCropFinish(accept){const resolve=invoiceCropResolve,file=invoiceCropFileObject,img=$('invoiceCropImage');invoiceCropResolve=null;if(!resolve){invoiceCropCleanup();return}if(!accept||!file||!img||!img.naturalWidth){invoiceCropCleanup();resolve(null);return}const sx=Math.max(0,Math.round(img.naturalWidth*invoiceCropLeft)),sw=Math.max(1,Math.min(img.naturalWidth-sx,Math.round(img.naturalWidth*(invoiceCropRight-invoiceCropLeft)))),canvas=document.createElement('canvas');canvas.width=sw;canvas.height=img.naturalHeight;const ctx=canvas.getContext('2d');if(!ctx){invoiceCropCleanup();resolve(null);return}ctx.drawImage(img,sx,0,sw,img.naturalHeight,0,0,sw,img.naturalHeight);canvas.toBlob(blob=>{invoiceCropCleanup();if(!blob){resolve(null);return}try{resolve(new File([blob],file.name||'invoice-crop.jpg',{type:'image/jpeg',lastModified:Date.now()}))}catch(e){resolve(blob)}},'image/jpeg',.94)}
+function invoiceCropBindHandle(id,side){const el=$(id);if(!el)return;el.addEventListener('pointerdown',e=>{e.preventDefault();invoiceCropDrag=side;try{el.setPointerCapture(e.pointerId)}catch(_){}invoiceCropMove(side,e)});el.addEventListener('pointermove',e=>{if(invoiceCropDrag===side)invoiceCropMove(side,e)});const stop=()=>{invoiceCropDrag=null};el.addEventListener('pointerup',stop);el.addEventListener('pointercancel',stop);el.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();const d=e.key==='ArrowRight'?.01:-.01;if(side==='left')invoiceCropLeft=Math.max(0,Math.min(invoiceCropRight-.08,invoiceCropLeft+d));else invoiceCropRight=Math.min(1,Math.max(invoiceCropLeft+.08,invoiceCropRight+d));invoiceCropUpdate()}})}
+invoiceCropBindHandle('invoiceCropHandleLeft','left');invoiceCropBindHandle('invoiceCropHandleRight','right');
+</script>
+
 </body></html>
 <style id="farshad-popup-theme-and-wheel-centering-fix">
 /* Keep the selection rail exactly centered inside each scrolling wheel, not the full column including its label. */
