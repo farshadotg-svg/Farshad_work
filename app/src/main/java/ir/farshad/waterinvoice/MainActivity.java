@@ -128,9 +128,20 @@ public class MainActivity extends Activity {
                         if (params.isCaptureEnabled()) {
                             launchInvoiceCamera();
                         } else {
-                            Intent gallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                            gallery.setType("image/*");
-                            gallery.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            Intent gallery;
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                // Android 13+: open the native photo picker, not the Files browser.
+                                gallery = new Intent(MediaStore.ACTION_PICK_IMAGES);
+                                gallery.setType("image/*");
+                                if (params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) {
+                                    gallery.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, 10);
+                                }
+                            } else {
+                                // Older Android versions: open the image collection directly.
+                                gallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                                gallery.setType("image/*");
+                                gallery.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            }
                             startActivityForResult(gallery, REQUEST_INVOICE_GALLERY);
                         }
                     } else {
