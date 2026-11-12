@@ -50,6 +50,9 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> pendingFileChooser;
     private static final int REQUEST_RESTORE_FILE = 4101;
     private static final int REQUEST_SAVE_FILE = 4102;
+    private static final int REQUEST_INVOICE_CAMERA = 4103;
+    private static final int REQUEST_INVOICE_GALLERY = 4104;
+    private Uri pendingCameraUri;
     private byte[] pendingSaveBytes;
 
     @Override public void onCreate(Bundle state) {
@@ -110,12 +113,39 @@ public class MainActivity extends Activity {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (pendingFileChooser != null) pendingFileChooser.onReceiveValue(null);
                 pendingFileChooser = callback;
-                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType("*/*");
-                intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/json", "text/json", "application/octet-stream"});
-                try { startActivityForResult(intent, REQUEST_RESTORE_FILE); }
-                catch (Exception e) { pendingFileChooser = null; callback.onReceiveValue(null); }
+                boolean wantsImage = false;
+                String[] accepted = params.getAcceptTypes();
+                if (accepted != null) {
+                    for (String type : accepted) {
+                        if (type != null && (type.toLowerCase().contains("image/") || type.trim().equals("*/*"))) {
+                            wantsImage = true;
+                            break;
+                        }
+                    }
+                }
+                try {
+                    if (wantsImage) {
+                        if (params.isCaptureEnabled()) {
+                            launchInvoiceCamera();
+                        } else {
+                            Intent gallery = new Intent(Intent.ACTION_GET_CONTENT);
+                            gallery.addCategory(Intent.CATEGORY_OPENABLE);
+                            gallery.setType("image/*");
+                            gallery.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE);
+                            startActivityForResult(Intent.createChooser(gallery, "انتخاب عکس از گالری"), REQUEST_INVOICE_GALLERY);
+                        }
+                    } else {
+                        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                        intent.addCategory(Intent.CATEGORY_OPENABLE);
+                        intent.setType("*/*");
+                        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/json", "text/json", "application/octet-stream"});
+                        startActivityForResult(intent, REQUEST_RESTORE_FILE);
+                    }
+                } catch (Exception e) {
+                    pendingFileChooser = null;
+                    callback.onReceiveValue(null);
+                    android.widget.Toast.makeText(MainActivity.this, "بازکردن دوربین یا گالری ناموفق بود: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+                }
                 return true;
             }
         });
@@ -177,12 +207,26 @@ public class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_RESTORE_FILE) {
+        if (requestCode == REQUEST_RESTORE_FILE || requestCode == REQUEST_INVOICE_CAMERA || requestCode == REQUEST_INVOICE_GALLERY) {
             if (pendingFileChooser != null) {
-                Uri[] result = resultCode == RESULT_OK && data != null && data.getData() != null ? new Uri[]{data.getData()} : null;
+                Uri[] result = null;
+                if (resultCode == RESULT_OK) {
+                    if (requestCode == REQUEST_INVOICE_CAMERA) {
+                        if (pendingCameraUri != null) result = new Uri[]{pendingCameraUri};
+                    } else if (data != null) {
+                        if (data.getClipData() != null) {
+                            ClipData clip = data.getClipData();
+                            result = new Uri[clip.getItemCount()];
+                            for (int i = 0; i < clip.getItemCount(); i++) result[i] = clip.getItemAt(i).getUri();
+                        } else if (data.getData() != null) {
+                            result = new Uri[]{data.getData()};
+                        }
+                    }
+                }
                 pendingFileChooser.onReceiveValue(result);
                 pendingFileChooser = null;
             }
+            if (requestCode == REQUEST_INVOICE_CAMERA && (resultCode != RESULT_OK)) pendingCameraUri = null;
             return;
         }
         if (requestCode == REQUEST_SAVE_FILE) {
@@ -197,6 +241,18 @@ public class MainActivity extends Activity {
             }
             pendingSaveBytes = null;
         }
+    }
+
+    private void launchInvoiceCamera() throws Exception {
+        File folder = new File(getCacheDir(), "shared-images");
+        if (!folder.exists() && !folder.mkdirs()) throw new IllegalStateException("ساخت پوشه موقت عکس ناموفق بود");
+        File photo = File.createTempFile("invoice_", ".jpg", folder);
+        pendingCameraUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photo);
+        Intent camera = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+        camera.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, pendingCameraUri);
+        camera.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        if (camera.resolveActivity(getPackageManager()) == null) throw new IllegalStateException("برنامه دوربین در گوشی پیدا نشد");
+        startActivityForResult(camera, REQUEST_INVOICE_CAMERA);
     }
 
     private class GoogleAuthBridge {
