@@ -118,7 +118,8 @@ public class MainActivity extends Activity {
                 if (pendingFileChooser != null) pendingFileChooser.onReceiveValue(null);
                 pendingFileChooser = callback;
                 boolean imageRequest = false;
-                for (String type : params.getAcceptTypes()) {
+                String[] acceptedTypes = params.getAcceptTypes() == null ? new String[0] : params.getAcceptTypes();
+                for (String type : acceptedTypes) {
                     if (type != null && (type.contains("image/") || type.equals("*/*"))) { imageRequest = true; break; }
                 }
                 if (imageRequest && params.isCaptureEnabled()) {
@@ -275,7 +276,7 @@ public class MainActivity extends Activity {
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_CAMERA_CAPTURE) {
-            Uri result = resultCode == RESULT_OK ? pendingCameraUri : null;
+            Uri result = resultCode == RESULT_OK && pendingCameraFile != null && pendingCameraFile.length() > 0 ? pendingCameraUri : null;
             finishWebFileChooser(result == null ? null : new Uri[]{result});
             if (result == null && pendingCameraFile != null) pendingCameraFile.delete();
             pendingCameraUri = null;
