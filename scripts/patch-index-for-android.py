@@ -136,6 +136,19 @@ if html.count(duplicate_firebase_init) != 1:
     raise SystemExit("Expected exactly one redundant Firebase initialization block; refusing an unsafe patch.")
 html = html.replace(duplicate_firebase_init, "", 1)
 
+# Route the two invoice photo buttons explicitly through the native Android picker.
+# WebView does not reliably preserve the HTML capture hint, so set the mode before click().
+camera_old = "function invoicePhotoOpenCamera(){$('invoicePhotoCamera').click()}"
+camera_new = "function invoicePhotoOpenCamera(){if(window.AndroidBridge&&typeof window.AndroidBridge.setInvoicePickerMode==='function')window.AndroidBridge.setInvoicePickerMode('camera');$('invoicePhotoCamera').click()}"
+gallery_old = "function invoicePhotoOpenGallery(){$('invoicePhotoGallery').click()}"
+gallery_new = "function invoicePhotoOpenGallery(){if(window.AndroidBridge&&typeof window.AndroidBridge.setInvoicePickerMode==='function')window.AndroidBridge.setInvoicePickerMode('gallery');$('invoicePhotoGallery').click()}"
+if html.count(camera_old) != 2 or html.count(gallery_old) != 2:
+    raise SystemExit("Expected exactly two invoice camera/gallery handlers; refusing an unsafe picker patch.")
+html = html.replace(camera_old, camera_new)
+html = html.replace(gallery_old, gallery_new)
+if html.count(camera_new) != 2 or html.count(gallery_new) != 2:
+    raise SystemExit("Native invoice picker mode hooks were not installed in both handlers.")
+
 required = [
     "window.AndroidBridge.copyText(txt)",
     "window.AndroidBridge.saveImageToGalleryBase64(btoa(binary),name)",
