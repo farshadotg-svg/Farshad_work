@@ -25,6 +25,9 @@ import android.provider.MediaStore;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
+import androidx.core.content.ContextCompat;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
 import androidx.credentials.Credential;
 import androidx.credentials.CredentialManager;
 import androidx.credentials.CredentialManagerCallback;
@@ -43,6 +46,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Executor;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -50,6 +54,9 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> pendingFileChooser;
     private static final int REQUEST_RESTORE_FILE = 4101;
     private static final int REQUEST_SAVE_FILE = 4102;
+    private static final int REQUEST_CAMERA_CAPTURE = 4103;
+    private Uri pendingCameraUri;
+    private File pendingCameraFile;
     private byte[] pendingSaveBytes;
 
     @Override public void onCreate(Bundle state) {
@@ -110,12 +117,17 @@ public class MainActivity extends Activity {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (pendingFileChooser != null) pendingFileChooser.onReceiveValue(null);
                 pendingFileChooser = callback;
-                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType("*/*");
-                intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/json", "text/json", "application/octet-stream"});
-                try { startActivityForResult(intent, REQUEST_RESTORE_FILE); }
-                catch (Exception e) { pendingFileChooser = null; callback.onReceiveValue(null); }
+                boolean imageRequest = false;
+                for (String type : params.getAcceptTypes()) {
+                    if (type != null && (type.contains("image/") || type.equals("*/*"))) { imageRequest = true; break; }
+                }
+                if (imageRequest && params.isCaptureEnabled()) {
+                    launchWebCameraCapture();
+                } else if (imageRequest) {
+                    launchWebGallery(params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE);
+                } else {
+                    launchRestoreFileChooser();
+                }
                 return true;
             }
         });
@@ -175,14 +187,110 @@ public class MainActivity extends Activity {
         webView.evaluateJavascript(script, null);
     }
 
+    private void finishWebFileChooser(Uri[] result) {
+        if (pendingFileChooser != null) {
+            pendingFileChooser.onReceiveValue(result);
+            pendingFileChooser = null;
+        }
+    }
+
+    private void launchRestoreFileChooser() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/json", "text/json", "application/octet-stream"});
+        try { startActivityForResult(intent, REQUEST_RESTORE_FILE); }
+        catch (Exception e) { finishWebFileChooser(null); }
+    }
+
+    private void launchWebGallery(boolean multiple) {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("image/*");
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        if (multiple) intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        try { startActivityForResult(Intent.createChooser(intent, "انتخاب عکس فاکتور"), REQUEST_RESTORE_FILE); }
+        catch (Exception e) { finishWebFileChooser(null); }
+    }
+
+    private void launchWebCameraCapture() {
+        try {
+            File dir = new File(getCacheDir(), "shared-images");
+            if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("ساخت پوشه موقت دوربین ناموفق بود");
+            pendingCameraFile = File.createTempFile("invoice_", ".jpg", dir);
+            pendingCameraUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", pendingCameraFile);
+            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, pendingCameraUri);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            if (intent.resolveActivity(getPackageManager()) == null) throw new IllegalStateException("دوربین در دسترس نیست");
+            startActivityForResult(intent, REQUEST_CAMERA_CAPTURE);
+        } catch (Exception e) {
+            pendingCameraUri = null;
+            pendingCameraFile = null;
+            finishWebFileChooser(null);
+            android.widget.Toast.makeText(this, "بازکردن دوربین ناموفق بود: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private boolean isBiometricAvailable() {
+        return BiometricManager.from(this).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                == BiometricManager.BIOMETRIC_SUCCESS;
+    }
+
+    private void authenticateBiometric() {
+        if (!isBiometricAvailable()) {
+            sendBiometricError("اثر انگشت در این گوشی فعال یا در دسترس نیست؛ از الگو استفاده کن.");
+            return;
+        }
+        Executor executor = ContextCompat.getMainExecutor(this);
+        BiometricPrompt prompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {
+            @Override public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                super.onAuthenticationSucceeded(result);
+                if (webView != null) webView.evaluateJavascript("window.onBiometricAuthSuccess && window.onBiometricAuthSuccess();", null);
+            }
+            @Override public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                super.onAuthenticationError(errorCode, errString);
+                if (errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON) sendBiometricError(errString.toString());
+            }
+            @Override public void onAuthenticationFailed() {
+                super.onAuthenticationFailed();
+                sendBiometricError("اثر انگشت شناسایی نشد؛ دوباره تلاش کن یا الگو را رسم کن.");
+            }
+        });
+        BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("قفل دفتر هوشمند فرشاد")
+                .setSubtitle("برای ورود، اثر انگشت را تأیید کن")
+                .setNegativeButtonText("ورود با الگو")
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                .build();
+        prompt.authenticate(info);
+    }
+
+    private void sendBiometricError(String message) {
+        if (webView != null) webView.post(() -> webView.evaluateJavascript(
+                "window.onBiometricAuthError && window.onBiometricAuthError(" + JSONObject.quote(message == null ? "اثر انگشت تأیید نشد." : message) + ");", null));
+    }
+
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CAMERA_CAPTURE) {
+            Uri result = resultCode == RESULT_OK ? pendingCameraUri : null;
+            finishWebFileChooser(result == null ? null : new Uri[]{result});
+            if (result == null && pendingCameraFile != null) pendingCameraFile.delete();
+            pendingCameraUri = null;
+            pendingCameraFile = null;
+            return;
+        }
         if (requestCode == REQUEST_RESTORE_FILE) {
-            if (pendingFileChooser != null) {
-                Uri[] result = resultCode == RESULT_OK && data != null && data.getData() != null ? new Uri[]{data.getData()} : null;
-                pendingFileChooser.onReceiveValue(result);
-                pendingFileChooser = null;
+            Uri[] result = null;
+            if (resultCode == RESULT_OK && data != null) {
+                if (data.getClipData() != null) {
+                    int count = data.getClipData().getItemCount();
+                    result = new Uri[count];
+                    for (int i = 0; i < count; i++) result[i] = data.getClipData().getItemAt(i).getUri();
+                } else if (data.getData() != null) result = new Uri[]{data.getData()};
             }
+            finishWebFileChooser(result);
             return;
         }
         if (requestCode == REQUEST_SAVE_FILE) {
@@ -249,6 +357,15 @@ public class MainActivity extends Activity {
     }
 
     private class AndroidBridge {
+        @JavascriptInterface public boolean isBiometricAvailable() {
+            return MainActivity.this.isBiometricAvailable();
+        }
+
+        @JavascriptInterface public void authenticateBiometric() {
+            runOnUiThread(MainActivity.this::authenticateBiometric);
+        }
+
+
         @JavascriptInterface public void saveTextFile(String filename, String content, String mimeType) {
             runOnUiThread(() -> {
                 try {
