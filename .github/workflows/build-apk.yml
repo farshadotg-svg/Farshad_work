@@ -9,7 +9,6 @@ on:
       - 'app/**'
       - 'build.gradle'
       - 'settings.gradle'
-      - '.github/workflows/build-apk.yml'
 permissions:
   contents: write
 jobs:
