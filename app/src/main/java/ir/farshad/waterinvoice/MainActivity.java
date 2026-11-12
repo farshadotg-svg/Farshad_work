@@ -128,11 +128,10 @@ public class MainActivity extends Activity {
                         if (params.isCaptureEnabled()) {
                             launchInvoiceCamera();
                         } else {
-                            Intent gallery = new Intent(Intent.ACTION_GET_CONTENT);
-                            gallery.addCategory(Intent.CATEGORY_OPENABLE);
+                            Intent gallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                             gallery.setType("image/*");
-                            gallery.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE);
-                            startActivityForResult(Intent.createChooser(gallery, "انتخاب عکس از گالری"), REQUEST_INVOICE_GALLERY);
+                            gallery.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            startActivityForResult(gallery, REQUEST_INVOICE_GALLERY);
                         }
                     } else {
                         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
