@@ -221,6 +221,7 @@ public class MainActivity extends Activity {
             pendingCameraUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", pendingCameraFile);
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             intent.putExtra(MediaStore.EXTRA_OUTPUT, pendingCameraUri);
+            intent.setClipData(ClipData.newRawUri("invoice-camera", pendingCameraUri));
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             if (intent.resolveActivity(getPackageManager()) == null) throw new IllegalStateException("دوربین در دسترس نیست");
             startActivityForResult(intent, REQUEST_CAMERA_CAPTURE);
