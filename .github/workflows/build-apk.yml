@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - 'index.html'
-      - 'index-farshad-v13-corrected.html'
       - 'scripts/**'
       - 'app/**'
       - 'build.gradle'
@@ -19,13 +18,9 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-      - name: Select v13 app HTML
+      - name: Require latest app HTML and Firebase config
         run: |
-          test -s index-farshad-v13-corrected.html || (echo 'Missing v13 HTML file.' && exit 1)
-          cp index-farshad-v13-corrected.html index.html
-      - name: Require app HTML and Firebase config
-        run: |
-          test -s index.html || (echo 'Missing or empty app HTML.' && exit 1)
+          test -s index.html || (echo 'Missing or empty latest index.html.' && exit 1)
           test -s app/google-services.json || (echo 'Missing app/google-services.json' && exit 1)
           python3 scripts/patch-index-for-android.py
           python3 -m pip install --quiet Pillow
