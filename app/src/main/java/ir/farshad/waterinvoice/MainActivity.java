@@ -24,6 +24,7 @@ import android.webkit.ValueCallback;
 import android.provider.MediaStore;
 
 import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentActivity;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
@@ -47,7 +48,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-public class MainActivity extends Activity {
+public class MainActivity extends FragmentActivity {
     private WebView webView;
     private CredentialManager credentialManager;
     private ValueCallback<Uri[]> pendingFileChooser;
