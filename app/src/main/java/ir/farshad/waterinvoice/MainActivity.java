@@ -24,6 +24,9 @@ import android.webkit.ValueCallback;
 import android.provider.MediaStore;
 
 import androidx.annotation.NonNull;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.credentials.Credential;
 import androidx.credentials.CredentialManager;
@@ -55,10 +58,71 @@ public class MainActivity extends Activity {
     private Uri pendingCameraUri;
     private volatile String nextInvoicePickerMode = "";
     private byte[] pendingSaveBytes;
+    private boolean appInitialized = false;
+    private boolean needsUnlockOnResume = false;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         credentialManager = CredentialManager.create(this);
+        showNativeAppUnlock();
+    }
+
+    private void showNativeAppUnlock() {
+        int authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG
+                | BiometricManager.Authenticators.DEVICE_CREDENTIAL;
+        BiometricManager manager = BiometricManager.from(this);
+        int availability = manager.canAuthenticate(authenticators);
+        if (availability != BiometricManager.BIOMETRIC_SUCCESS) {
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("قفل دفتر هوشمند فرشاد")
+                    .setMessage("برای ورود، ابتدا در تنظیمات گوشی قفل صفحه (الگو، PIN یا رمز) و در صورت تمایل اثر انگشت را فعال کنید.")
+                    .setCancelable(false)
+                    .setPositiveButton("تلاش دوباره", (d, w) -> showNativeAppUnlock())
+                    .setNegativeButton("خروج", (d, w) -> finish())
+                    .show();
+            return;
+        }
+
+        BiometricPrompt prompt = new BiometricPrompt(this,
+                ContextCompat.getMainExecutor(this),
+                new BiometricPrompt.AuthenticationCallback() {
+                    @Override public void onAuthenticationSucceeded(
+                            @NonNull BiometricPrompt.AuthenticationResult result) {
+                        super.onAuthenticationSucceeded(result);
+                        needsUnlockOnResume = false;
+                        if (!appInitialized) initializeApp();
+                    }
+
+                    @Override public void onAuthenticationError(int errorCode,
+                            @NonNull CharSequence errString) {
+                        super.onAuthenticationError(errorCode, errString);
+                        if (!isFinishing()) finish();
+                    }
+                });
+
+        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("قفل دفتر هوشمند فرشاد")
+                .setSubtitle("برای ورود، اثر انگشت یا الگو و رمز گوشی را تأیید کنید")
+                .setAllowedAuthenticators(authenticators)
+                .build();
+        prompt.authenticate(promptInfo);
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (appInitialized && needsUnlockOnResume) {
+            needsUnlockOnResume = false;
+            showNativeAppUnlock();
+        }
+    }
+
+    @Override protected void onUserLeaveHint() {
+        super.onUserLeaveHint();
+        if (appInitialized) needsUnlockOnResume = true;
+    }
+
+    private void initializeApp() {
+        appInitialized = true;
         webView = new WebView(this);
         setContentView(webView);
 
