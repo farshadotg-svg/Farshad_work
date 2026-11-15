@@ -1258,16 +1258,26 @@ async function showServiceDetails(id){const r=records.find(x=>String(x.id)===Str
 #invoiceCropDialog{width:min(100%,560px);max-height:94dvh;overflow:auto;padding:16px;border:1px solid #40546b;border-radius:19px;background:#101c2b;color:#f5f7fa;box-shadow:0 20px 70px #0009;text-align:center}
 #invoiceCropDialog h3{margin:0 0 8px;font-size:17px}
 #invoiceCropDialog p{margin:0 0 14px;color:#c3d0df;font-size:13px;line-height:1.8}
-#invoiceCropStage{position:relative;display:inline-block;max-width:100%;margin:0 auto;line-height:0;overflow:visible;touch-action:pan-y;user-select:none}
+#invoiceCropStage{position:relative;display:inline-block;max-width:100%;margin:0 auto;line-height:0;overflow:visible;touch-action:none;user-select:none}
 #invoiceCropImage{display:block;max-width:82vw;max-height:58vh;width:auto;height:auto;object-fit:contain;pointer-events:none}
-.invoice-crop-mask{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.58);pointer-events:none}
-#invoiceCropMaskLeft{left:0;width:var(--crop-left,0%)}
-#invoiceCropMaskRight{left:var(--crop-right,100%);right:0}
-.invoice-crop-handle{position:absolute;top:0;bottom:0;width:34px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;touch-action:none;cursor:ew-resize}
-.invoice-crop-handle:after{content:"";height:100%;width:3px;border-radius:4px;background:#ffd36c;box-shadow:0 0 0 1px #17283a,0 0 12px #ffd36c99}
-.invoice-crop-handle:before{content:"↔";position:absolute;top:45%;width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#ffd36c;color:#17283a;font-size:15px;font-weight:bold;box-shadow:0 2px 8px #0008}
+.invoice-crop-mask{position:absolute;background:rgba(0,0,0,.58);pointer-events:none}
+#invoiceCropMaskLeft{left:0;top:0;bottom:0;width:var(--crop-left,0%)}
+#invoiceCropMaskRight{left:var(--crop-right,100%);right:0;top:0;bottom:0}
+#invoiceCropMaskTop{left:0;right:0;top:0;height:var(--crop-top,0%)}
+#invoiceCropMaskBottom{left:0;right:0;top:var(--crop-bottom,100%);bottom:0}
+.invoice-crop-handle{position:absolute;display:flex;align-items:center;justify-content:center;touch-action:none}
+.invoice-crop-handle:after{content:"";position:absolute;background:#ffd36c;box-shadow:0 0 0 1px #17283a,0 0 12px #ffd36c99}
+.invoice-crop-handle:before{position:absolute;width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#ffd36c;color:#17283a;font-size:15px;font-weight:bold;box-shadow:0 2px 8px #0008}
+.invoice-crop-handle.horizontal{top:0;bottom:0;width:34px;transform:translateX(-50%);cursor:ew-resize}
+.invoice-crop-handle.horizontal:after{height:100%;width:3px;border-radius:4px}
+.invoice-crop-handle.horizontal:before{content:"↔";top:45%}
+.invoice-crop-handle.vertical{left:0;right:0;height:34px;transform:translateY(-50%);cursor:ns-resize}
+.invoice-crop-handle.vertical:after{width:100%;height:3px;border-radius:4px}
+.invoice-crop-handle.vertical:before{content:"↕";left:calc(50% - 12px)}
 #invoiceCropHandleLeft{left:var(--crop-left,0%)}
 #invoiceCropHandleRight{left:var(--crop-right,100%)}
+#invoiceCropHandleTop{top:var(--crop-top,0%)}
+#invoiceCropHandleBottom{top:var(--crop-bottom,100%)}
 #invoiceCropActions{display:flex;gap:10px;margin-top:16px}
 #invoiceCropActions button{flex:1;min-height:46px;border:1px solid #53677d;border-radius:12px;background:#24364a;color:#f5f7fa;font:inherit;font-weight:700}
 #invoiceCropAccept{background:linear-gradient(135deg,#176d50,#104b39)!important;border-color:#2aa978!important}
@@ -1278,13 +1288,17 @@ body.light #invoiceCropDialog p{color:#536477}
 <div id="invoiceCropOverlay" aria-hidden="true">
  <section id="invoiceCropDialog" role="dialog" aria-modal="true" aria-labelledby="invoiceCropTitle">
   <h3 id="invoiceCropTitle">تنظیم برش عکس فاکتور</h3>
-  <p>خط زرد سمت چپ و راست را با انگشت جابه‌جا کن تا قسمت اضافه عکس حذف شود.</p>
+  <p>هر چهار خط زرد را با انگشت جابه‌جا کن؛ چپ و راست برای برش افقی و بالا و پایین برای برش عمودی هستند.</p>
   <div id="invoiceCropStage">
    <img id="invoiceCropImage" alt="پیش‌نمایش برش عکس">
    <div id="invoiceCropMaskLeft" class="invoice-crop-mask"></div>
    <div id="invoiceCropMaskRight" class="invoice-crop-mask"></div>
-   <div id="invoiceCropHandleLeft" class="invoice-crop-handle" role="slider" aria-label="لبه چپ برش"></div>
-   <div id="invoiceCropHandleRight" class="invoice-crop-handle" role="slider" aria-label="لبه راست برش"></div>
+   <div id="invoiceCropMaskTop" class="invoice-crop-mask"></div>
+   <div id="invoiceCropMaskBottom" class="invoice-crop-mask"></div>
+   <div id="invoiceCropHandleLeft" class="invoice-crop-handle horizontal" role="slider" aria-label="لبه چپ برش"></div>
+   <div id="invoiceCropHandleRight" class="invoice-crop-handle horizontal" role="slider" aria-label="لبه راست برش"></div>
+   <div id="invoiceCropHandleTop" class="invoice-crop-handle vertical" role="slider" aria-label="لبه بالای برش"></div>
+   <div id="invoiceCropHandleBottom" class="invoice-crop-handle vertical" role="slider" aria-label="لبه پایین برش"></div>
   </div>
   <div id="invoiceCropActions">
    <button type="button" onclick="invoiceCropFinish(false)">انصراف</button>
@@ -1293,14 +1307,14 @@ body.light #invoiceCropDialog p{color:#536477}
  </section>
 </div>
 <script id="invoice-manual-horizontal-crop-script">
-let invoiceCropResolve=null,invoiceCropFileObject=null,invoiceCropObjectUrl=null,invoiceCropLeft=0,invoiceCropRight=1,invoiceCropDrag=null;
-function invoiceCropUpdate(){const stage=$('invoiceCropStage');if(!stage)return;stage.style.setProperty('--crop-left',(invoiceCropLeft*100)+'%');stage.style.setProperty('--crop-right',(invoiceCropRight*100)+'%');$('invoiceCropHandleLeft').setAttribute('aria-valuenow',String(Math.round(invoiceCropLeft*100)));$('invoiceCropHandleRight').setAttribute('aria-valuenow',String(Math.round(invoiceCropRight*100)))}
-function invoiceCropMove(side,event){const rect=$('invoiceCropStage').getBoundingClientRect();if(!rect.width)return;const p=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width));if(side==='left')invoiceCropLeft=Math.max(0,Math.min(p,invoiceCropRight-.08));else invoiceCropRight=Math.min(1,Math.max(p,invoiceCropLeft+.08));invoiceCropUpdate()}
-function invoicePhotoCropFile(file){return new Promise(resolve=>{const overlay=$('invoiceCropOverlay'),img=$('invoiceCropImage');if(!overlay||!img){resolve(file);return}invoiceCropResolve=resolve;invoiceCropFileObject=file;invoiceCropLeft=0;invoiceCropRight=1;invoiceCropDrag=null;invoiceCropObjectUrl=URL.createObjectURL(file);img.onload=()=>{invoiceCropUpdate();overlay.classList.add('open');overlay.setAttribute('aria-hidden','false')};img.onerror=()=>{const done=invoiceCropResolve;invoiceCropResolve=null;invoiceCropCleanup();if(done)done(null)};img.src=invoiceCropObjectUrl})}
+let invoiceCropResolve=null,invoiceCropFileObject=null,invoiceCropObjectUrl=null,invoiceCropLeft=0,invoiceCropRight=1,invoiceCropTop=0,invoiceCropBottom=1,invoiceCropDrag=null;
+function invoiceCropUpdate(){const stage=$('invoiceCropStage');if(!stage)return;stage.style.setProperty('--crop-left',(invoiceCropLeft*100)+'%');stage.style.setProperty('--crop-right',(invoiceCropRight*100)+'%');stage.style.setProperty('--crop-top',(invoiceCropTop*100)+'%');stage.style.setProperty('--crop-bottom',(invoiceCropBottom*100)+'%');[['Left',invoiceCropLeft],['Right',invoiceCropRight],['Top',invoiceCropTop],['Bottom',invoiceCropBottom]].forEach(([name,value])=>{const el=$('invoiceCropHandle'+name);if(el)el.setAttribute('aria-valuenow',String(Math.round(value*100)))})}
+function invoiceCropMove(side,event){const rect=$('invoiceCropStage').getBoundingClientRect();if(!rect.width||!rect.height)return;const px=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width)),py=Math.max(0,Math.min(1,(event.clientY-rect.top)/rect.height));if(side==='left')invoiceCropLeft=Math.max(0,Math.min(px,invoiceCropRight-.08));else if(side==='right')invoiceCropRight=Math.min(1,Math.max(px,invoiceCropLeft+.08));else if(side==='top')invoiceCropTop=Math.max(0,Math.min(py,invoiceCropBottom-.08));else if(side==='bottom')invoiceCropBottom=Math.min(1,Math.max(py,invoiceCropTop+.08));invoiceCropUpdate()}
+function invoicePhotoCropFile(file){return new Promise(resolve=>{const overlay=$('invoiceCropOverlay'),img=$('invoiceCropImage');if(!overlay||!img){resolve(file);return}invoiceCropResolve=resolve;invoiceCropFileObject=file;invoiceCropLeft=0;invoiceCropRight=1;invoiceCropTop=0;invoiceCropBottom=1;invoiceCropDrag=null;invoiceCropObjectUrl=URL.createObjectURL(file);img.onload=()=>{invoiceCropUpdate();overlay.classList.add('open');overlay.setAttribute('aria-hidden','false')};img.onerror=()=>{const done=invoiceCropResolve;invoiceCropResolve=null;invoiceCropCleanup();if(done)done(null)};img.src=invoiceCropObjectUrl})}
 function invoiceCropCleanup(){const overlay=$('invoiceCropOverlay');if(overlay){overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true')}const img=$('invoiceCropImage');if(img)img.removeAttribute('src');if(invoiceCropObjectUrl){URL.revokeObjectURL(invoiceCropObjectUrl);invoiceCropObjectUrl=null}invoiceCropDrag=null;invoiceCropFileObject=null}
-function invoiceCropFinish(accept){const resolve=invoiceCropResolve,file=invoiceCropFileObject,img=$('invoiceCropImage');invoiceCropResolve=null;if(!resolve){invoiceCropCleanup();return}if(!accept||!file||!img||!img.naturalWidth){invoiceCropCleanup();resolve(null);return}const sx=Math.max(0,Math.round(img.naturalWidth*invoiceCropLeft)),sw=Math.max(1,Math.min(img.naturalWidth-sx,Math.round(img.naturalWidth*(invoiceCropRight-invoiceCropLeft)))),canvas=document.createElement('canvas');canvas.width=sw;canvas.height=img.naturalHeight;const ctx=canvas.getContext('2d');if(!ctx){invoiceCropCleanup();resolve(null);return}ctx.drawImage(img,sx,0,sw,img.naturalHeight,0,0,sw,img.naturalHeight);canvas.toBlob(blob=>{invoiceCropCleanup();if(!blob){resolve(null);return}try{resolve(new File([blob],file.name||'invoice-crop.jpg',{type:'image/jpeg',lastModified:Date.now()}))}catch(e){resolve(blob)}},'image/jpeg',.94)}
-function invoiceCropBindHandle(id,side){const el=$(id);if(!el)return;el.addEventListener('pointerdown',e=>{e.preventDefault();invoiceCropDrag=side;try{el.setPointerCapture(e.pointerId)}catch(_){}invoiceCropMove(side,e)});el.addEventListener('pointermove',e=>{if(invoiceCropDrag===side)invoiceCropMove(side,e)});const stop=()=>{invoiceCropDrag=null};el.addEventListener('pointerup',stop);el.addEventListener('pointercancel',stop);el.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();const d=e.key==='ArrowRight'?.01:-.01;if(side==='left')invoiceCropLeft=Math.max(0,Math.min(invoiceCropRight-.08,invoiceCropLeft+d));else invoiceCropRight=Math.min(1,Math.max(invoiceCropLeft+.08,invoiceCropRight+d));invoiceCropUpdate()}})}
-invoiceCropBindHandle('invoiceCropHandleLeft','left');invoiceCropBindHandle('invoiceCropHandleRight','right');
+function invoiceCropFinish(accept){const resolve=invoiceCropResolve,file=invoiceCropFileObject,img=$('invoiceCropImage');invoiceCropResolve=null;if(!resolve){invoiceCropCleanup();return}if(!accept||!file||!img||!img.naturalWidth||!img.naturalHeight){invoiceCropCleanup();resolve(null);return}const sx=Math.max(0,Math.round(img.naturalWidth*invoiceCropLeft)),sy=Math.max(0,Math.round(img.naturalHeight*invoiceCropTop)),sw=Math.max(1,Math.min(img.naturalWidth-sx,Math.round(img.naturalWidth*(invoiceCropRight-invoiceCropLeft)))),sh=Math.max(1,Math.min(img.naturalHeight-sy,Math.round(img.naturalHeight*(invoiceCropBottom-invoiceCropTop)))),canvas=document.createElement('canvas');canvas.width=sw;canvas.height=sh;const ctx=canvas.getContext('2d');if(!ctx){invoiceCropCleanup();resolve(null);return}ctx.drawImage(img,sx,sy,sw,sh,0,0,sw,sh);canvas.toBlob(blob=>{invoiceCropCleanup();if(!blob){resolve(null);return}try{resolve(new File([blob],file.name||'invoice-crop.jpg',{type:'image/jpeg',lastModified:Date.now()}))}catch(e){resolve(blob)}},'image/jpeg',.94)}
+function invoiceCropBindHandle(id,side){const el=$(id);if(!el)return;el.addEventListener('pointerdown',e=>{e.preventDefault();invoiceCropDrag=side;try{el.setPointerCapture(e.pointerId)}catch(_){}invoiceCropMove(side,e)});el.addEventListener('pointermove',e=>{if(invoiceCropDrag===side)invoiceCropMove(side,e)});const stop=()=>{invoiceCropDrag=null};el.addEventListener('pointerup',stop);el.addEventListener('pointercancel',stop);el.addEventListener('keydown',e=>{const horizontal=side==='left'||side==='right',key=horizontal?(e.key==='ArrowLeft'||e.key==='ArrowRight'):(e.key==='ArrowUp'||e.key==='ArrowDown');if(!key)return;e.preventDefault();const d=(e.key==='ArrowRight'||e.key==='ArrowDown')?.01:-.01;if(side==='left')invoiceCropLeft=Math.max(0,Math.min(invoiceCropRight-.08,invoiceCropLeft+d));else if(side==='right')invoiceCropRight=Math.min(1,Math.max(invoiceCropLeft+.08,invoiceCropRight+d));else if(side==='top')invoiceCropTop=Math.max(0,Math.min(invoiceCropBottom-.08,invoiceCropTop+d));else invoiceCropBottom=Math.min(1,Math.max(invoiceCropTop+.08,invoiceCropBottom+d));invoiceCropUpdate()})}
+invoiceCropBindHandle('invoiceCropHandleLeft','left');invoiceCropBindHandle('invoiceCropHandleRight','right');invoiceCropBindHandle('invoiceCropHandleTop','top');invoiceCropBindHandle('invoiceCropHandleBottom','bottom');
 </script>
 
 </body></html>
