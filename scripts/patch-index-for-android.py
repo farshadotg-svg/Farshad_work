@@ -136,6 +136,58 @@ if html.count(duplicate_firebase_init) != 1:
     raise SystemExit("Expected exactly one redundant Firebase initialization block; refusing an unsafe patch.")
 html = html.replace(duplicate_firebase_init, "", 1)
 
+# V16 fixes: native Android contacts/gallery actions, image rotation/sharing,
+# ignored-service layout, Firebase bridge scope, and scrollable select dialogs.
+def replace_once(old, new, label):
+    global html
+    count = html.count(old)
+    if count != 1:
+        raise SystemExit(f"Expected one {label} anchor, found {count}; refusing a partial patch.")
+    html = html.replace(old, new, 1)
+
+replace_once(
+    "fbAuth=fbApp.auth();fbDb=fbApp.firestore();window.cloudReady=true;",
+    "fbAuth=fbApp.auth();fbDb=fbApp.firestore();window.fbAuth=fbAuth;window.fbDb=fbDb;window.cloudReady=true;",
+    "Firebase window bridge"
+)
+
+old_contact = "async function pickCustomerContact(){if(!('contacts' in navigator)||typeof navigator.contacts.select!=='function'){alert('انتخاب مستقیم مخاطب در این مرورگر پشتیبانی نمی‌شود. نام و شماره را دستی وارد کن؛ برنامه برای دفعات بعد شماره را به خاطر می‌سپارد.');return}try{const contacts=await navigator.contacts.select(['name','tel'],{multiple:false});if(!contacts||!contacts.length)return;const c=contacts[0],name=(c.name&&c.name[0]||'').trim(),phone=(c.tel&&c.tel[0]||'').trim();if(name)$('customer').value=name;if(phone)$('customerPhone').value=phone;$('customerPhone').dataset.edited='1';if(name&&phone)rememberCustomerPhone(name,phone);updatePreview()}catch(e){if(e&&e.name!=='AbortError')alert('مخاطب انتخاب نشد. می‌توانی نام و شماره را دستی وارد کنی.')}}"
+new_contact = "async function pickCustomerContact(){if(window.AndroidBridge&&typeof window.AndroidBridge.pickContact==='function'){window.onNativeContactPicked=(name,phone)=>{if(name)$('customer').value=name;if(phone)$('customerPhone').value=phone;$('customerPhone').dataset.edited='1';if(name&&phone)rememberCustomerPhone(name,phone);updatePreview()};window.AndroidBridge.pickContact();return}if(!('contacts' in navigator)||typeof navigator.contacts.select!=='function'){alert('انتخاب مخاطب در این مرورگر پشتیبانی نمی‌شود.');return}try{const contacts=await navigator.contacts.select(['name','tel'],{multiple:false});if(!contacts||!contacts.length)return;const c=contacts[0],name=(c.name&&c.name[0]||'').trim(),phone=(c.tel&&c.tel[0]||'').trim();if(name)$('customer').value=name;if(phone)$('customerPhone').value=phone;$('customerPhone').dataset.edited='1';if(name&&phone)rememberCustomerPhone(name,phone);updatePreview()}catch(e){if(e&&e.name!=='AbortError')alert('مخاطب انتخاب نشد.')}}"
+replace_once(old_contact,new_contact,"native contact picker")
+
+replace_once(
+    "function invoicePhotoOpenGallery(){$('invoicePhotoGallery').click()}",
+    "function invoicePhotoOpenGallery(){if(window.AndroidBridge&&typeof window.AndroidBridge.setInvoicePickerMode==='function')window.AndroidBridge.setInvoicePickerMode('gallery');$('invoicePhotoGallery').click()}",
+    "direct gallery picker"
+)
+
+replace_once(
+    '<div class="invoice-crop-actions"><button type="button" id="invoiceCropConfirm" class="primary">تأیید برش</button>',
+    '<div class="invoice-crop-actions"><button type="button" id="invoiceCropRotate">چرخش ۹۰° ↻</button><button type="button" id="invoiceCropConfirm" class="primary">تأیید برش</button>',
+    "crop rotate button"
+)
+replace_once(
+    "img.onload=()=>{modal.classList.add('show');document.body.style.overflow='hidden';requestAnimationFrame(layout)};img.onerror=()=>close(null,new Error('Image could not be opened'));img.src=url;",
+    "img.onload=()=>{modal.classList.add('show');document.body.style.overflow='hidden';requestAnimationFrame(layout)};img.onerror=()=>close(null,new Error('Image could not be opened'));$('invoiceCropRotate').onclick=()=>{try{const c=document.createElement('canvas');c.width=img.naturalHeight;c.height=img.naturalWidth;const cx=c.getContext('2d');cx.translate(c.width/2,c.height/2);cx.rotate(Math.PI/2);cx.drawImage(img,-img.naturalWidth/2,-img.naturalHeight/2);img.src=c.toDataURL('image/jpeg',.94)}catch(err){alert('چرخاندن تصویر ممکن نشد.')}};img.src=url;",
+    "crop rotation handler"
+)
+
+# Keep date and ignored badge in a predictable order even when the service is ignored.
+html += '\\n<style id="ignored-service-date-order-v16">.service-title .service-title-name{order:1;flex:1 1 100%}.service-title .service-date{order:2;margin-inline-start:auto}.service-title .ignored-tag{order:3;flex:0 0 auto}#appSelectOptions{overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain}#appSelectDialog{overscroll-behavior:contain}#appLockBiometric{display:none!important}</style>\\n'
+
+# The classification image action must share the image, not write it to Gallery.
+old_class_share = "if(saveOnly){await saveImageToGallery(blob,'gozaresh-daste.png');return}const file=new File([blob],'gozaresh-daste.png',{type:'image/png'});"
+new_class_share = "if(saveOnly){await saveImageToGallery(blob,'gozaresh-daste.png');return}if(window.AndroidBridge&&typeof window.AndroidBridge.shareImageBase64==='function'){const bytes=new Uint8Array(await blob.arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));window.AndroidBridge.shareImageBase64(btoa(binary),'gozaresh-daste.png');return}const file=new File([blob],'gozaresh-daste.png',{type:'image/png'});"
+replace_once(old_class_share,new_class_share,"classification image sharing")
+
+# Ensure the generated APK never prompts for biometrics at app launch.
+# The Android activity is initialized directly; hide the optional fingerprint action in the HTML lock UI.
+replace_once(
+    '<button type="button" id="appLockBiometric" onclick="securityTryFingerprint()">اثر انگشت</button>',
+    '',
+    "fingerprint login control"
+)
+
 required = [
     "window.AndroidBridge.copyText(txt)",
     "window.AndroidBridge.saveImageToGalleryBase64(btoa(binary),name)",
