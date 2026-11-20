@@ -9,7 +9,7 @@ style = '<style id="welcome-app-layer-fix">body:not(.app-entered) .app{visibilit
 if 'id="welcome-app-layer-fix"' not in html:
     if "</body>" not in html:
         raise SystemExit("Cannot install welcome/app layer fix: </body> not found.")
-    html = html.replace("</body>", style + "\\n</body>", 1)
+    html = html.replace("</body>", style + "</body>", 1)
 
 old_enter = "window.enterFarshadApp=function(){const welcome=$s('appWelcomeScreen');if(saved()){mode='unlock';show('الگوی ورود','')}else if(welcome)welcome.classList.add('welcome-hidden')};"
 new_enter = "window.enterFarshadApp=function(){const welcome=$s('appWelcomeScreen');if(saved()){mode='unlock';show('الگوی ورود','')}else{document.body.classList.add('app-entered');if(welcome)welcome.classList.add('welcome-hidden')}};"
