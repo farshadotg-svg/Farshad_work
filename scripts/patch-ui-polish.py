@@ -33,7 +33,7 @@ if 'id="farshad-ui-polish"' in s:
  s=re.sub(r'<style id="farshad-ui-polish">.*?</style>',css,s,count=1,flags=re.S)
 else:
  s=s.replace("</head>",css+"</head>",1)
-pat=re.compile(r"function serviceHTML\\(r\\)\\{return `.*?`\\}\\s*function toggleDay",re.S)
+pat=re.compile(r"function serviceHTML\(r\)\{return `.*?`\}\s*function toggleDay",re.S)
 fn=r"""function serviceHTML(r){return `<div class="service ${r.ignored?'ignored-service':''}"><div class="service-topline"><span class="service-date">${esc(toJalali(r.date))}</span>${r.ignored?'<span class="ignored-tag">نادیده گرفته شده</span>':''}</div><div class="service-title"><span class="service-title-name">${faNum(r.count)} سرویس ${esc(r.customer)} از ${esc(r.source)}</span></div><div class="service-info"><div class="service-metrics"><div class="service-metric"><small>تعداد سرویس</small><b>${enNum(r.count)}</b></div><div class="service-metric"><small>مبلغ کل</small><b>${enNum(r.count*r.price)} تومان</b></div><div class="service-metric"><small>قیمت هر سرویس</small><b>${enNum(r.price)} تومان</b></div><div class="service-metric source"><small>محل آبگیری</small><b>${esc(r.source||'—')}</b></div></div>${r.description?`<div class="service-description">یادداشت: ${esc(r.description)}</div>`:''}</div><div class="service-actions"><button onclick="editService('${r.id}')">✏️ ویرایش</button><button class="danger" onclick="deleteService('${r.id}')">🗑 حذف</button><button type="button" class="${r.paid?'paid':'unpaid'}" onclick="togglePaid('${r.id}')" aria-label="تغییر وضعیت پرداخت">${r.paid?'✓ پرداخت شده':'✕ پرداخت نشده'}</button><button type="button" onclick="showServiceDetails('${r.id}')">جزئیات</button></div></div>`}
 function toggleDay"""
 s,n=pat.subn(lambda m: fn,s,count=1)
