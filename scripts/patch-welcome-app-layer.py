@@ -1,3 +1,4 @@
+# Build pipeline patch: isolate welcome and pattern layers.
 from pathlib import Path
 
 path = Path("index.html")
