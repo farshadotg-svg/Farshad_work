@@ -193,19 +193,11 @@ public class MainActivity extends FragmentActivity {
                             // The camera button explicitly requests the camera, independent of WebView capture hints.
                             launchInvoiceCamera();
                         } else {
-                            Intent gallery;
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                // Open the system Photo Picker directly; avoid falling back to a document/file browser.
-                                gallery = new Intent(MediaStore.ACTION_PICK_IMAGES);
-                                if (params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) {
-                                    gallery.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, 10);
-                                }
-                            } else {
-                                // Older Android versions: open the image collection through the Gallery provider.
-                                gallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                                gallery.setType("image/*");
-                                gallery.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                            }
+                            // Open the device's Gallery image collection directly on every Android version.
+                            // ACTION_PICK_IMAGES opens Android's generic Photo Picker, not necessarily the Gallery app.
+                            Intent gallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                            gallery.setType("image/*");
+                            gallery.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                             startActivityForResult(gallery, REQUEST_INVOICE_GALLERY);
                         }
                     } else {
