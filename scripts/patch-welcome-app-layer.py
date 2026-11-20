@@ -37,5 +37,15 @@ elif new_bio not in html:
 if 'id="welcome-app-layer-fix"' not in html or new_enter not in html or new_unlock not in html or new_bio not in html:
     raise SystemExit("Welcome/app layer fix validation failed.")
 
+
+# Prevent even a first-frame flash before the head stylesheet is painted.
+app_open = '<div class="app">'
+app_hidden = '<div class="app" style="display:none">'
+if html.count(app_open) == 1:
+    html = html.replace(app_open, app_hidden, 1)
+elif html.count(app_hidden) != 1:
+    raise SystemExit("Expected one main app wrapper for startup hiding.")
+if "body.app-entered .app{display:block!important" not in html:
+    raise SystemExit("Welcome/app visibility rule is missing.")
 path.write_text(html, encoding="utf-8")
 print("Welcome/app layer isolation installed and validated.")
