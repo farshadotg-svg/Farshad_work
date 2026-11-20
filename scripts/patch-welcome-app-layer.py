@@ -1,36 +1,41 @@
-# Build pipeline patch: isolate welcome and pattern layers.
+# Build pipeline patch: keep the main app completely out of the layout until welcome/login succeeds.
 from pathlib import Path
 
 path = Path("index.html")
 html = path.read_text(encoding="utf-8")
 
-# Keep the application DOM hidden until the welcome/login flow succeeds.
-style = '<style id="welcome-app-layer-fix">body:not(.app-entered) .app{visibility:hidden!important;pointer-events:none!important}body.app-entered .app{visibility:visible!important;pointer-events:auto!important}</style>'
-if 'id="welcome-app-layer-fix"' not in html:
-    if "</body>" not in html:
-        raise SystemExit("Cannot install welcome/app layer fix: </body> not found.")
-    html = html.replace("</body>", style + "</body>", 1)
+style = '<style id="welcome-app-layer-fix">body:not(.app-entered) .app{display:none!important;visibility:hidden!important;pointer-events:none!important}body.app-entered .app{display:block!important;visibility:visible!important;pointer-events:auto!important}</style>'
+if 'id="welcome-app-layer-fix"' in html:
+    import re
+    html = re.sub(r'<style id="welcome-app-layer-fix">.*?</style>', style, html, count=1, flags=re.S)
+else:
+    if "</head>" not in html:
+        raise SystemExit("Cannot install welcome/app layer fix: </head> not found.")
+    html = html.replace("</head>", style + "</head>", 1)
 
 old_enter = "window.enterFarshadApp=function(){const welcome=$s('appWelcomeScreen');if(saved()){mode='unlock';show('الگوی ورود','')}else if(welcome)welcome.classList.add('welcome-hidden')};"
 new_enter = "window.enterFarshadApp=function(){const welcome=$s('appWelcomeScreen');if(saved()){mode='unlock';show('الگوی ورود','')}else{document.body.classList.add('app-entered');if(welcome)welcome.classList.add('welcome-hidden')}};"
-if html.count(old_enter) != 1 and new_enter not in html:
-    raise SystemExit(f"Expected one welcome entry handler, found {html.count(old_enter)}.")
 if old_enter in html:
     html = html.replace(old_enter, new_enter, 1)
+elif new_enter not in html:
+    raise SystemExit(f"Expected welcome entry handler; old version count={html.count('window.enterFarshadApp=')}.")
 
 old_unlock = "if(hashPattern(value)===saved()){hide();const welcome=$s('appWelcomeScreen');if(welcome)welcome.classList.add('welcome-hidden');return}"
 new_unlock = "if(hashPattern(value)===saved()){hide();document.body.classList.add('app-entered');const welcome=$s('appWelcomeScreen');if(welcome)welcome.classList.add('welcome-hidden');return}"
-if html.count(old_unlock) != 1 and new_unlock not in html:
-    raise SystemExit(f"Expected one successful pattern unlock handler, found {html.count(old_unlock)}.")
 if old_unlock in html:
     html = html.replace(old_unlock, new_unlock, 1)
+elif new_unlock not in html:
+    raise SystemExit("Expected successful pattern-unlock handler.")
 
 old_bio = "window.onBiometricAuthSuccess=function(){hide();const welcome=$s('appWelcomeScreen');if(welcome)welcome.classList.add('welcome-hidden')};"
 new_bio = "window.onBiometricAuthSuccess=function(){hide();document.body.classList.add('app-entered');const welcome=$s('appWelcomeScreen');if(welcome)welcome.classList.add('welcome-hidden')};"
 if old_bio in html:
     html = html.replace(old_bio, new_bio, 1)
+elif new_bio not in html:
+    raise SystemExit("Expected biometric-success handler.")
 
-if 'id="welcome-app-layer-fix"' not in html or new_enter not in html or new_unlock not in html:
+if 'id="welcome-app-layer-fix"' not in html or new_enter not in html or new_unlock not in html or new_bio not in html:
     raise SystemExit("Welcome/app layer fix validation failed.")
 
 path.write_text(html, encoding="utf-8")
+print("Welcome/app layer isolation installed and validated.")
