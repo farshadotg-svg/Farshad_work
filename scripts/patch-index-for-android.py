@@ -210,13 +210,14 @@ if 'id="app-select-popup-script"' not in html:
 
 # Fix temporal-dead-zone startup: initialize the main UI only after the Firebase
 # default config binding has been initialized.
-if html.count("\\ninit();\\n\\nfunction applyTheme") != 1:
+init_marker = chr(10) + "init();" + chr(10) + chr(10) + "function applyTheme"
+if html.count(init_marker) != 1:
     raise SystemExit("Could not locate the early init() call for safe Firebase initialization.")
-html = html.replace("\\ninit();\\n\\nfunction applyTheme", "\\nfunction applyTheme", 1)
+html = html.replace(init_marker, chr(10) + "function applyTheme", 1)
 firebase_boot = "try { const saved=JSON.parse(localStorage.getItem('waterFirebaseConfig_v1')||'null'); initFirebase(saved || DEFAULT_FIREBASE_CONFIG); } catch(e) { initFirebase(DEFAULT_FIREBASE_CONFIG); }"
 if html.count(firebase_boot) != 1:
     raise SystemExit("Could not locate the Firebase startup block.")
-html = html.replace(firebase_boot, firebase_boot + "\\ninit();", 1)
+html = html.replace(firebase_boot, firebase_boot + chr(10) + "init();", 1)
 
 # Classification report image: include table heading and spacing in canvas height,
 # and reserve enough footer space so both totals are visible.
