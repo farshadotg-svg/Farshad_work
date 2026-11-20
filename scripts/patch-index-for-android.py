@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 path = Path("index.html")
