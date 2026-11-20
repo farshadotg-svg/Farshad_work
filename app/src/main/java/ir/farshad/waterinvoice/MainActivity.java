@@ -119,6 +119,8 @@ public class MainActivity extends FragmentActivity {
     private void initializeApp() {
         appInitialized = true;
         webView = new WebView(this);
+        // Paint the app's dark base immediately while the welcome HTML is loading.
+        webView.setBackgroundColor(android.graphics.Color.rgb(2, 5, 10));
         setContentView(webView);
 
         WebSettings settings = webView.getSettings();
