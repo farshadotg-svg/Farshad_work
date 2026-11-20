@@ -197,4 +197,41 @@ for marker in required:
     if marker not in html:
         raise SystemExit(f"Required Android integration is missing: {marker}")
 
+
+# V17: remove the legacy custom dropdown layer. V16 installs the single
+# app-select dialog; keeping the older v12 MutationObserver creates two triggers.
+import re
+html, legacy_style_count = re.subn(r'<style id="farshad-custom-dropdowns-v12">.*?</style>', '', html, count=1, flags=re.S)
+html, legacy_script_count = re.subn(r'<script id="farshad-custom-dropdowns-v12-script">.*?</script>', '', html, count=1, flags=re.S)
+if legacy_style_count != 1 or legacy_script_count != 1:
+    raise SystemExit(f"Expected one legacy dropdown style/script, found {legacy_style_count}/{legacy_script_count}.")
+if 'id="app-select-popup-script"' not in html:
+    raise SystemExit("Single custom select dialog is missing after removing legacy dropdowns.")
+
+# Fix temporal-dead-zone startup: initialize the main UI only after the Firebase
+# default config binding has been initialized.
+if html.count("\\ninit();\\n\\nfunction applyTheme") != 1:
+    raise SystemExit("Could not locate the early init() call for safe Firebase initialization.")
+html = html.replace("\\ninit();\\n\\nfunction applyTheme", "\\nfunction applyTheme", 1)
+firebase_boot = "try { const saved=JSON.parse(localStorage.getItem('waterFirebaseConfig_v1')||'null'); initFirebase(saved || DEFAULT_FIREBASE_CONFIG); } catch(e) { initFirebase(DEFAULT_FIREBASE_CONFIG); }"
+if html.count(firebase_boot) != 1:
+    raise SystemExit("Could not locate the Firebase startup block.")
+html = html.replace(firebase_boot, firebase_boot + "\\ninit();", 1)
+
+# Classification report image: include table heading and spacing in canvas height,
+# and reserve enough footer space so both totals are visible.
+old_canvas = "async function classShareCategoryImage(saveOnly=false){const rows=classCategoryRecords(),W=1200,rowH=76,headerH=240,footerH=155,canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');"
+new_canvas = "async function classShareCategoryImage(saveOnly=false){const rows=classCategoryRecords(),W=1200,rowH=76,headerH=250,tableHeadH=52,footerH=180,canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');"
+if html.count(old_canvas) != 1:
+    raise SystemExit("Classification image function anchor not found exactly once.")
+html = html.replace(old_canvas,new_canvas,1)
+old_height = "canvas.width=W;canvas.height=headerH+Math.max(1,rows.length)*rowH;"
+new_height = "canvas.width=W;canvas.height=headerH+tableHeadH+Math.max(1,rows.length)*rowH+10+footerH;"
+if html.count(old_height) != 1:
+    raise SystemExit("Classification image canvas height anchor not found.")
+html = html.replace(old_height,new_height,1)
+html = html.replace("ctx.fillText('تعداد سرویس: '+faNum(countTrips(rows))+' ',W-35,175);let y=headerH;ctx.fillStyle='#dce8f5';ctx.fillRect(20,y,W-40,52);","ctx.fillText('تعداد سرویس: '+faNum(countTrips(rows))+' ',W-35,205);let y=headerH;ctx.fillStyle='#dce8f5';ctx.fillRect(20,y,W-40,tableHeadH);",1)
+if "tableHeadH" not in html or "footerH=180" not in html:
+    raise SystemExit("Classification image layout validation failed.")
+
 path.write_text(html, encoding="utf-8")
