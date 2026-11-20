@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.database.Cursor;
+import android.provider.ContactsContract;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.net.Uri;
@@ -56,6 +58,7 @@ public class MainActivity extends FragmentActivity {
     private static final int REQUEST_SAVE_FILE = 4102;
     private static final int REQUEST_INVOICE_CAMERA = 4103;
     private static final int REQUEST_INVOICE_GALLERY = 4104;
+    private static final int REQUEST_PICK_CONTACT = 4105;
     private Uri pendingCameraUri;
     private volatile String nextInvoicePickerMode = "";
     private byte[] pendingSaveBytes;
@@ -65,7 +68,7 @@ public class MainActivity extends FragmentActivity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         credentialManager = CredentialManager.create(this);
-        showNativeAppUnlock();
+        initializeApp();
     }
 
     private void showNativeAppUnlock() {
@@ -109,18 +112,9 @@ public class MainActivity extends FragmentActivity {
         prompt.authenticate(promptInfo);
     }
 
-    @Override protected void onResume() {
-        super.onResume();
-        if (appInitialized && needsUnlockOnResume) {
-            needsUnlockOnResume = false;
-            showNativeAppUnlock();
-        }
-    }
+    @Override protected void onResume() { super.onResume(); }
 
-    @Override protected void onUserLeaveHint() {
-        super.onUserLeaveHint();
-        if (appInitialized) needsUnlockOnResume = true;
-    }
+    @Override protected void onUserLeaveHint() { super.onUserLeaveHint(); }
 
     private void initializeApp() {
         appInitialized = true;
@@ -243,21 +237,21 @@ public class MainActivity extends FragmentActivity {
             "window.completeNativeGoogleSignIn = async function(idToken) {" +
             " const waitForFirebase = async () => {" +
             "  const deadline = Date.now() + 15000;" +
-            "  while ((!window.firebase || !window.firebase.auth || !window.firebase.firestore || typeof fbAuth === 'undefined' || !fbAuth || typeof fbDb === 'undefined' || !fbDb) && Date.now() < deadline) {" +
+            "  while ((!window.firebase || !window.firebase.auth || !window.firebase.firestore || typeof window.fbAuth === 'undefined' || !window.fbAuth || typeof window.fbDb === 'undefined' || !window.fbDb) && Date.now() < deadline) {" +
             "   await new Promise(resolve => setTimeout(resolve, 250));" +
             "  }" +
-            "  if (window.firebase && window.firebase.auth && window.firebase.firestore && (typeof fbAuth === 'undefined' || !fbAuth || typeof fbDb === 'undefined' || !fbDb)) {" +
+            "  if (window.firebase && window.firebase.auth && window.firebase.firestore && (typeof window.fbAuth === 'undefined' || !window.fbAuth || typeof window.fbDb === 'undefined' || !window.fbDb)) {" +
             "   if (typeof initFirebase === 'function' && typeof DEFAULT_FIREBASE_CONFIG !== 'undefined') initFirebase(DEFAULT_FIREBASE_CONFIG);" +
             "  }" +
             "  if (!window.firebase || !window.firebase.auth || !window.firebase.firestore) throw new Error('کتابخانه Firebase بارگذاری نشد؛ اینترنت گوشی را بررسی کنید.');" +
-            "  if (typeof fbAuth === 'undefined' || !fbAuth || typeof fbDb === 'undefined' || !fbDb) throw new Error('راه‌اندازی Firebase کامل نشد. برنامه را ببندید و دوباره باز کنید.');" +
+            "  if (typeof window.fbAuth === 'undefined' || !window.fbAuth || typeof window.fbDb === 'undefined' || !window.fbDb) throw new Error('راه‌اندازی Firebase کامل نشد. برنامه را ببندید و دوباره باز کنید.');" +
             " };" +
             " await waitForFirebase();" +
             " const credential = firebase.auth.GoogleAuthProvider.credential(idToken);" +
-            " await fbAuth.signInWithCredential(credential);" +
-            " const u = fbAuth.currentUser;" +
+            " await window.fbAuth.signInWithCredential(credential);" +
+            " const u = window.fbAuth.currentUser;" +
             " if (!u) throw new Error('ورود انجام نشد.');" +
-            " const ref = fbDb.collection('users').doc(u.uid);" +
+            " const ref = window.fbDb.collection('users').doc(u.uid);" +
             " const snap = await ref.get();" +
             " if (snap.exists) {" +
             "  if (await window.appConfirm('برای این حساب، پشتیبان ابری پیدا شد. اطلاعات ابری جایگزین اطلاعات فعلی این گوشی شود؟\\nتأیید = بازیابی از ابر\\nلغو = نگه‌داشتن اطلاعات گوشی و بارگذاری آن به ابر')) {" +
@@ -307,6 +301,27 @@ public class MainActivity extends FragmentActivity {
                 pendingFileChooser = null;
             }
             if (requestCode == REQUEST_INVOICE_CAMERA && (resultCode != RESULT_OK)) pendingCameraUri = null;
+            return;
+        }
+        if (requestCode == REQUEST_PICK_CONTACT) {
+            if (resultCode == RESULT_OK && data != null && data.getData() != null) {
+                String name = "", phone = "";
+                try (Cursor cursor = getContentResolver().query(data.getData(),
+                        new String[]{ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER},
+                        null, null, null)) {
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int nameIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME);
+                        int phoneIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+                        if (nameIndex >= 0) name = cursor.getString(nameIndex);
+                        if (phoneIndex >= 0) phone = cursor.getString(phoneIndex);
+                    }
+                } catch (Exception e) {
+                    android.widget.Toast.makeText(this, "خواندن مخاطب ناموفق بود: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+                }
+                webView.evaluateJavascript("window.onNativeContactPicked && window.onNativeContactPicked("
+                        + JSONObject.quote(name == null ? "" : name) + ","
+                        + JSONObject.quote(phone == null ? "" : phone) + ");", null);
+            }
             return;
         }
         if (requestCode == REQUEST_SAVE_FILE) {
@@ -385,6 +400,18 @@ public class MainActivity extends FragmentActivity {
     }
 
     private class AndroidBridge {
+        @JavascriptInterface public void pickContact() {
+            runOnUiThread(() -> {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI);
+                    if (intent.resolveActivity(getPackageManager()) == null) throw new IllegalStateException("دفترچه تلفن در دسترس نیست");
+                    startActivityForResult(intent, REQUEST_PICK_CONTACT);
+                } catch (Exception e) {
+                    android.widget.Toast.makeText(MainActivity.this, "بازکردن دفترچه تلفن ناموفق بود: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
         @JavascriptInterface public void setInvoicePickerMode(String mode) {
             if ("camera".equals(mode) || "gallery".equals(mode)) {
                 nextInvoicePickerMode = mode;
@@ -428,17 +455,22 @@ public class MainActivity extends FragmentActivity {
         @JavascriptInterface public void shareImageBase64(String encoded, String filename) {
             runOnUiThread(() -> {
                 try {
-                    pendingSaveBytes = Base64.decode(encoded, Base64.DEFAULT);
+                    byte[] bytes = Base64.decode(encoded, Base64.DEFAULT);
+                    File folder = new File(getCacheDir(), "shared-images");
+                    if (!folder.exists() && !folder.mkdirs()) throw new IllegalStateException("ساخت پوشه موقت تصویر ناموفق بود");
                     String safeName = (filename == null || filename.trim().isEmpty() ? "gozaresh.png" : filename).replaceAll("[^A-Za-z0-9._-]", "_");
                     if (!safeName.toLowerCase().endsWith(".png")) safeName += ".png";
-                    Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    File imageFile = new File(folder, safeName);
+                    try (FileOutputStream output = new FileOutputStream(imageFile)) { output.write(bytes); output.flush(); }
+                    Uri uri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", imageFile);
+                    Intent intent = new Intent(Intent.ACTION_SEND);
                     intent.setType("image/png");
-                    intent.putExtra(Intent.EXTRA_TITLE, safeName);
-                    startActivityForResult(intent, REQUEST_SAVE_FILE);
+                    intent.putExtra(Intent.EXTRA_STREAM, uri);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    intent.setClipData(ClipData.newUri(getContentResolver(), "گزارش تصویری", uri));
+                    startActivity(Intent.createChooser(intent, "اشتراک‌گذاری تصویر"));
                 } catch (Exception e) {
-                    pendingSaveBytes = null;
-                    android.widget.Toast.makeText(MainActivity.this, "ذخیره تصویر ناموفق بود: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+                    android.widget.Toast.makeText(MainActivity.this, "اشتراک‌گذاری تصویر ناموفق بود: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
                 }
             });
         }
