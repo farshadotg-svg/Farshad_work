@@ -226,11 +226,10 @@ new_canvas = "async function classShareCategoryImage(saveOnly=false){const rows=
 if html.count(old_canvas) != 1:
     raise SystemExit("Classification image function anchor not found exactly once.")
 html = html.replace(old_canvas,new_canvas,1)
-old_height = "canvas.width=W;canvas.height=headerH+Math.max(1,rows.length)*rowH+footerH;"
-new_height = "canvas.width=W;canvas.height=headerH+tableHeadH+Math.max(1,rows.length)*rowH+10+footerH;"
-if html.count(old_height) != 1:
-    raise SystemExit("Classification image canvas height anchor not found.")
-html = html.replace(old_height,new_height,1)
+height_pattern = r"canvas\\.width=W;canvas\\.height=headerH\\+Math\\.max\\(1,rows\\.length\\)\\*rowH\\+footerH;"
+html, height_count = re.subn(height_pattern, "canvas.width=W;canvas.height=headerH+tableHeadH+Math.max(1,rows.length)*rowH+10+footerH;", html, count=1)
+if height_count != 1:
+    raise SystemExit(f"Classification image canvas height anchor not found (matches={height_count}).")
 html = html.replace("ctx.fillText('تعداد سرویس: '+faNum(countTrips(rows))+' ',W-35,175);let y=headerH;ctx.fillStyle='#dce8f5';ctx.fillRect(20,y,W-40,52);","ctx.fillText('تعداد سرویس: '+faNum(countTrips(rows))+' ',W-35,205);let y=headerH;ctx.fillStyle='#dce8f5';ctx.fillRect(20,y,W-40,tableHeadH);",1)
 if "tableHeadH" not in html or "footerH=180" not in html:
     raise SystemExit("Classification image layout validation failed.")
