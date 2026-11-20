@@ -173,7 +173,7 @@ replace_once(
 )
 
 # Keep date and ignored badge in a predictable order even when the service is ignored.
-html += '\\n<style id="ignored-service-date-order-v16">.service-title .service-title-name{order:1;flex:1 1 100%}.service-title .service-date{order:2;margin-inline-start:auto}.service-title .ignored-tag{order:3;flex:0 0 auto}#appSelectOptions{overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain}#appSelectDialog{overscroll-behavior:contain}#appLockBiometric{display:none!important}</style>\\n'
+html += '\n<style id="ignored-service-date-order-v16">.service-title .service-title-name{order:1;flex:1 1 100%}.service-title .service-date{order:2;margin-inline-start:auto}.service-title .ignored-tag{order:3;flex:0 0 auto}#appSelectOptions{overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain}#appSelectDialog{overscroll-behavior:contain}#appLockBiometric{display:none!important}</style>\\n'
 
 # The classification image action must share the image, not write it to Gallery.
 old_class_share = "if(saveOnly){await saveImageToGallery(blob,'gozaresh-daste.png');return}const file=new File([blob],'gozaresh-daste.png',{type:'image/png'});"
