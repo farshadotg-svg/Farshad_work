@@ -27,6 +27,7 @@ jobs:
           test -s app/google-services.json || (echo 'Missing app/google-services.json' && exit 1)
           python3 scripts/patch-index-for-android.py
           python3 scripts/patch-welcome-app-layer.py
+          python3 scripts/patch-ui-polish.py
           python3 -m pip install --quiet Pillow
           python3 scripts/optimize-embedded-image.py
           python3 scripts/check-inline-js.py
