@@ -102,15 +102,11 @@ for marker in required:
         raise SystemExit(f"Required Android integration is missing: {marker}")
 
 
-# V17: remove the legacy custom dropdown layer. V16 installs the single
-# app-select dialog; keeping the older v12 MutationObserver creates two triggers.
-import re
-html, legacy_style_count = re.subn(r'<style id="farshad-custom-dropdowns-v12">.*?</style>', '', html, count=1, flags=re.S)
-html, legacy_script_count = re.subn(r'<script id="farshad-custom-dropdowns-v12-script">.*?</script>', '', html, count=1, flags=re.S)
-if legacy_style_count != 1 or legacy_script_count != 1:
-    raise SystemExit(f"Expected one legacy dropdown style/script, found {legacy_style_count}/{legacy_script_count}.")
-if 'id="app-select-popup-script"' not in html:
-    raise SystemExit("Single custom select dialog is missing after removing legacy dropdowns.")
+# Keep the original v12 custom dropdown implementation as the only renderer.
+# The app-select-popup layer is intentionally not injected: it wrapped selects a
+# second time and caused two stacked controls in the service form.
+if 'id="app-select-popup-script"' in html:
+    raise SystemExit("Duplicate app-select popup layer unexpectedly exists in source.")
 
 # Fix temporal-dead-zone startup: initialize the main UI only after the Firebase
 # default config binding has been initialized.
