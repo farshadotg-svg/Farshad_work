@@ -226,7 +226,7 @@ new_canvas = "async function classShareCategoryImage(saveOnly=false){const rows=
 if html.count(old_canvas) != 1:
     raise SystemExit("Classification image function anchor not found exactly once.")
 html = html.replace(old_canvas,new_canvas,1)
-old_height = "canvas.width=W;canvas.height=headerH+Math.max(1,rows.length)*rowH;"
+old_height = "canvas.width=W;canvas.height=headerH+Math.max(1,rows.length)*rowH+footerH;"
 new_height = "canvas.width=W;canvas.height=headerH+tableHeadH+Math.max(1,rows.length)*rowH+10+footerH;"
 if html.count(old_height) != 1:
     raise SystemExit("Classification image canvas height anchor not found.")
