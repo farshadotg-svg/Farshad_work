@@ -155,11 +155,11 @@ old_contact = "async function pickCustomerContact(){if(!('contacts' in navigator
 new_contact = "async function pickCustomerContact(){if(window.AndroidBridge&&typeof window.AndroidBridge.pickContact==='function'){window.onNativeContactPicked=(name,phone)=>{if(name)$('customer').value=name;if(phone)$('customerPhone').value=phone;$('customerPhone').dataset.edited='1';if(name&&phone)rememberCustomerPhone(name,phone);updatePreview()};window.AndroidBridge.pickContact();return}if(!('contacts' in navigator)||typeof navigator.contacts.select!=='function'){alert('انتخاب مخاطب در این مرورگر پشتیبانی نمی‌شود.');return}try{const contacts=await navigator.contacts.select(['name','tel'],{multiple:false});if(!contacts||!contacts.length)return;const c=contacts[0],name=(c.name&&c.name[0]||'').trim(),phone=(c.tel&&c.tel[0]||'').trim();if(name)$('customer').value=name;if(phone)$('customerPhone').value=phone;$('customerPhone').dataset.edited='1';if(name&&phone)rememberCustomerPhone(name,phone);updatePreview()}catch(e){if(e&&e.name!=='AbortError')alert('مخاطب انتخاب نشد.')}}"
 replace_once(old_contact,new_contact,"native contact picker")
 
-replace_once(
-    "function invoicePhotoOpenGallery(){$('invoicePhotoGallery').click()}",
-    "function invoicePhotoOpenGallery(){if(window.AndroidBridge&&typeof window.AndroidBridge.setInvoicePickerMode==='function')window.AndroidBridge.setInvoicePickerMode('gallery');$('invoicePhotoGallery').click()}",
-    "direct gallery picker"
-)
+old_gallery_picker = "function invoicePhotoOpenGallery(){$('invoicePhotoGallery').click()}"
+new_gallery_picker = "function invoicePhotoOpenGallery(){if(window.AndroidBridge&&typeof window.AndroidBridge.setInvoicePickerMode==='function')window.AndroidBridge.setInvoicePickerMode('gallery');$('invoicePhotoGallery').click()}"
+if html.count(old_gallery_picker) != 2:
+    raise SystemExit(f"Expected two direct gallery picker anchors, found {html.count(old_gallery_picker)}.")
+html = html.replace(old_gallery_picker, new_gallery_picker)
 
 replace_once(
     '<div class="invoice-crop-actions"><button type="button" id="invoiceCropConfirm" class="primary">تأیید برش</button>',
